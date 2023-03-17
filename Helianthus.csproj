@@ -1,0 +1,29 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+	
+  <PropertyGroup>
+    <TargetFramework>net48</TargetFramework>
+    <Version>1.0</Version>
+    <Title>Helianthus</Title>
+    <Description>Description of Helianthus</Description>
+    <TargetExt>.gha</TargetExt>
+  </PropertyGroup>
+  
+  <ItemGroup>
+    <PackageReference Include="Grasshopper" Version="7.13.21348.13001" IncludeAssets="compile;build" />
+  </ItemGroup>
+  
+  <ItemGroup>
+    <None Remove="Components\" />
+    <None Remove="DataObjects\" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Components\" />
+    <Folder Include="DataObjects\" />
+  </ItemGroup>
+  <PropertyGroup Condition="$(Configuration) == 'Debug' AND $([MSBuild]::IsOSPlatform(Windows))">
+    <StartProgram>C:\Program Files\Rhino 7\System\Rhino.exe</StartProgram>
+    <StartArguments></StartArguments>
+    <StartAction>Program</StartAction>
+  </PropertyGroup>
+
+</Project>
