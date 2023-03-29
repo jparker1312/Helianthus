@@ -17,11 +17,11 @@ namespace Helianthus
     /// new tabs/panels will automatically be created.
     /// </summary>
     public Legend()
-      : base("Legend",
-             "Legend",
-             "Legend for visualizations",
+      : base("LegendParameters",
+             "Legend Parameters",
+             "Legend Parameters for visualizations",
              "Helianthus",
-             "Visualize")
+             "03 | Visualize Data")
     {
     }
 
@@ -30,15 +30,15 @@ namespace Helianthus
     /// </summary>
     protected override void RegisterInputParams(GH_Component.GH_InputParamManager pManager)
     {
-        pManager.AddPointParameter("Graph Offset", "GraphOffset",
-            "Set the Offset for the visualization", GH_ParamAccess.item,
-            new Point3d(0,0,0));
-        pManager.AddNumberParameter("Graph Scale", "GraphScale",
-            "Scale the graph proportional to input geometry",
+        pManager.AddPointParameter("GraphOffset", "Graph Offset",
+            "Set the offset position for the visualization", GH_ParamAccess.item,
+            new Point3d(1,0,0));
+        pManager.AddNumberParameter("GraphScale", "Graph Scale",
+            "Scale the graph proportionally to input geometry",
             GH_ParamAccess.item, 1);
-        pManager.AddNumberParameter("Graph Background Transparency",
-            "Graph_bgTrans", "The Transparency of the background for visualization",
-            GH_ParamAccess.item, 50);
+        pManager.AddNumberParameter("GraphBackgroundTransparency",
+            "Graph Background Transparency", "The transparency of the " +
+            "background for the visualization",GH_ParamAccess.item, 50);
     }
 
     /// <summary>
@@ -48,8 +48,8 @@ namespace Helianthus
     {
         pManager.AddTextParameter("Out", "Out", "Input Parameters",
             GH_ParamAccess.item);
-        pManager.AddGenericParameter("Legend Data", "LegendData",
-            "Legend Data Object", GH_ParamAccess.item);
+        pManager.AddGenericParameter("LegendParameters", "Legend Parameters",
+            "Legend Parameters", GH_ParamAccess.item);
     }
 
     /// <summary>
@@ -111,6 +111,8 @@ namespace Helianthus
         return null;
       }
     }
+
+    public override GH_Exposure Exposure => GH_Exposure.primary;
 
     /// <summary>
     /// Each component must have a unique Guid to identify it. 

@@ -20,11 +20,11 @@ namespace Helianthus
     /// new tabs/panels will automatically be created.
     /// </summary>
     public DliSuitability()
-      : base("Dli Suitability",
-             "Dli Suitability",
-             "Filters crops based on Dli thresholds",
+      : base("DLI_Suitability",
+             "DLI Suitability",
+             "Filters crops based on DLI thresholds",
              "Helianthus",
-             "Analyze")
+             "02 | Analyze Data")
     {
     }
 
@@ -33,12 +33,14 @@ namespace Helianthus
     /// </summary>
     protected override void RegisterInputParams(GH_Component.GH_InputParamManager pManager)
     {
-        pManager.AddNumberParameter("Surface Sunlight DLI", "SSC_DLI",
-            "Surface Sunlight DLI", GH_ParamAccess.item, 0);
-        pManager.AddGenericParameter("Crops List", "Crops", "List of crops",
-            GH_ParamAccess.list);
-        pManager.AddNumberParameter("DLI Transmittance", "DLI Trans",
-            "DLI Transmittance", GH_ParamAccess.item, .65);
+        pManager.AddNumberParameter("SurfaceDLI", "Surface DLI",
+            "Surface Sunlight DLI", GH_ParamAccess.item);
+        pManager.AddGenericParameter("CropDataList", "Crop Data List",
+            "List of crops from the Helianthus Database", GH_ParamAccess.list);
+        pManager.AddNumberParameter("MaterialTransmittance",
+            "Material Light Transmittance",
+            "Effectiveness of a material in transimitting sunlight",
+            GH_ParamAccess.item, .65);
     }
 
     /// <summary>
@@ -48,9 +50,9 @@ namespace Helianthus
     {
         pManager.AddTextParameter("Out", "Out", "Input Parameters",
             GH_ParamAccess.item);
-        pManager.AddGenericParameter("Crops List", "CropsList",
+        pManager.AddGenericParameter("FilteredCropList", "Filtered Crop List",
             "Crops Meeting Sunlight Threshold", GH_ParamAccess.list);
-        pManager.AddNumberParameter("Surface DLI", "Surface DLI",
+        pManager.AddNumberParameter("SurfaceDLI", "Surface DLI",
             "Surface Sunlight DLI", GH_ParamAccess.item);
     }
 
@@ -99,6 +101,9 @@ namespace Helianthus
     /// return Resources.IconForThisComponent;
     /// </summary>
     protected override System.Drawing.Bitmap Icon => null;
+
+
+    public override GH_Exposure Exposure => GH_Exposure.secondary;
 
     /// <summary>
     /// Each component must have a unique Guid to identify it. 

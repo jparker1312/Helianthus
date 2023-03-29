@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Drawing;
 using System.IO;
 using System.Collections.Generic;
 
@@ -19,11 +20,11 @@ namespace Helianthus
     /// new tabs/panels will automatically be created.
     /// </summary>
     public CropsList()
-      : base("Crops List",
-             "Crops",
-             "Create List of Crops from CSV",
+      : base("ImportCropData",
+             "Import Crop Data",
+             "Create List<> of Crop Data from a CSV file",
              "Helianthus",
-             "Analyze")
+             "01 | Import")
     {
     }
 
@@ -32,8 +33,8 @@ namespace Helianthus
     /// </summary>
     protected override void RegisterInputParams(GH_Component.GH_InputParamManager pManager)
     {
-        pManager.AddTextParameter("Crop Info CSV", "CI", "CSV of Crop Data",
-            GH_ParamAccess.item);
+        pManager.AddTextParameter("CropDataCSV", "Crop Data CSV",
+            "CSV of Crop Data", GH_ParamAccess.item);
     }
 
     /// <summary>
@@ -41,7 +42,7 @@ namespace Helianthus
     /// </summary>
     protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
     {
-        pManager.AddGenericParameter("Crops List", "Crops",
+        pManager.AddGenericParameter("CropDataList", "Crop Data List",
             "List of crops from the Helianthus Database", GH_ParamAccess.list);
     }
 
@@ -66,19 +67,22 @@ namespace Helianthus
         DA.SetDataList(0, cropList);
     }
 
-    /// <summary>
-    /// Provides an Icon for every component that will be visible in the User Interface.
-    /// Icons need to be 24x24 pixels.
-    /// </summary>
-    protected override System.Drawing.Bitmap Icon
-    {
-      get
-      { 
-        // You can add image files to your project resources and access them like this:
-        //return Resources.IconForThisComponent;
-        return null;
-      }
-    }
+        ///// <summary>
+        ///// Provides an Icon for every component that will be visible in the User Interface.
+        ///// Icons need to be 24x24 pixels.
+        ///// </summary>
+        //protected override System.Drawing.Bitmap Icon
+        //{
+        //    get
+        //    {
+        //        // You can add image files to your project resources and access them like this:
+        //        //return Resources.IconForThisComponent;
+        //        return null;
+        //    }
+        //}
+
+   
+    protected override Bitmap Icon => Properties.Resources.importCropData;
 
     /// <summary>
     /// Each component must have a unique Guid to identify it. 

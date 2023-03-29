@@ -20,11 +20,12 @@ namespace Helianthus
     public static System.Drawing.Color Black_COLOR = System.Drawing.Color.FromArgb(255, 0, 0, 0);
 
     public DliVisualization()
-      : base("DLI Visualization",
-             "DLI Viz",
-             "Visualization of crop DLI values",
+      : base("SiteSpecificCropVisualization",
+             "Site-Specific Crop Visualization",
+             "Site-specific crop visualization showing the crop-surface " +
+             "suitability according to DLI values",
              "Helianthus",
-             "Visualize")
+             "03 | Visualize Data")
     {
     }
 
@@ -33,13 +34,15 @@ namespace Helianthus
     /// </summary>
     protected override void RegisterInputParams(GH_Component.GH_InputParamManager pManager)
     {
-        pManager.AddGenericParameter("List of Crops", "LCrops", "List of Crops",
-            GH_ParamAccess.list);
-        pManager.AddNumberParameter("Avg Surface DLI", "DLI", "sruface DLI",
-            GH_ParamAccess.item);
-        pManager.AddGeometryParameter("Geometry", "G", "Go", GH_ParamAccess.item);
-        pManager.AddGenericParameter("Legend Object", "LegendData",
-            "Legend Object Data", GH_ParamAccess.item);
+        pManager.AddGenericParameter("CropsToVisualize", "Crops To Visualize",
+            "List of Crops that you want to visualize", GH_ParamAccess.list);
+        pManager.AddNumberParameter("SurfaceDLI", "Surface DLI",
+            "Surface Sunlight DLI", GH_ParamAccess.item);
+        pManager.AddGeometryParameter("SurfaceGeometry", "Surface Geometry",
+            "Rhino Surfaces or Rhino Meshes for which crop DLI analysis will " +
+            "be conducted", GH_ParamAccess.item);
+        pManager.AddGenericParameter("LegendParameters", "Legend Parameters",
+            "Legend Parameters for the visualization", GH_ParamAccess.item);
     }
 
     /// <summary>
@@ -47,10 +50,11 @@ namespace Helianthus
     /// </summary>
     protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
     {
-        pManager.AddMeshParameter("Mesh", "B", "Second Split result.",
+        pManager.AddMeshParameter("Graph", "Graph", "Graph made up of a list " +
+            "of meshes visualizing suitability of crop-surface DLIs",
             GH_ParamAccess.list);
-        pManager.AddLineParameter("DLI Line", "DLI", "Surface DLI Line",
-            GH_ParamAccess.item);
+        pManager.AddLineParameter("SurfaceDLI_Constant", "Surface DLI Constant",
+            "Surface DLI Constant Line", GH_ParamAccess.item);
     }
 
     /// <summary>
@@ -267,6 +271,8 @@ namespace Helianthus
         return null;
       }
     }
+
+    public override GH_Exposure Exposure => GH_Exposure.secondary;
 
     /// <summary>
     /// Each component must have a unique Guid to identify it. 

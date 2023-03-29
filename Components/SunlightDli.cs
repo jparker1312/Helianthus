@@ -19,11 +19,11 @@ namespace Helianthus
     /// new tabs/panels will automatically be created.
     /// </summary>
     public SunlightDli()
-      : base("Sunlight DLI",
+      : base("SunlightDLI",
              "Sunlight DLI",
-             "Transforms sunlight data into a DLI constant",
+             "Converts solar radiation data into a Daily Light Integral (DLI) constant",
              "Helianthus",
-             "Analyze")
+             "02 | Analyze Data")
     {
     }
 
@@ -32,9 +32,9 @@ namespace Helianthus
     /// </summary>
     protected override void RegisterInputParams(GH_Component.GH_InputParamManager pManager)
     {
-        pManager.AddNumberParameter("Surface Sunlight Constant", "SSC",
-            "Surface Sunlight Constant: Defaults to roof value; unit is kw h/m2",
-            GH_ParamAccess.item, 0);
+        pManager.AddNumberParameter("SurfaceSolarRadiation", "Surface Solar Radiation",
+            "Surface Solar Radiation as an arithmetic mean, unit is kWh/m2",
+            GH_ParamAccess.item);
     }
 
     /// <summary>
@@ -44,7 +44,7 @@ namespace Helianthus
     {
         pManager.AddTextParameter("Out", "Out", "Input Parameters",
             GH_ParamAccess.item);
-        pManager.AddNumberParameter("Surface DLI", "Surface DLI",
+        pManager.AddNumberParameter("SurfaceDLI", "Surface DLI",
             "Surface Sunlight DLI", GH_ParamAccess.item);
     }
 
@@ -97,6 +97,8 @@ namespace Helianthus
         return null;
       }
     }
+
+    public override GH_Exposure Exposure => GH_Exposure.primary;
 
     /// <summary>
     /// Each component must have a unique Guid to identify it. 
