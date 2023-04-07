@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Drawing;
 using System.IO;
 using System.Collections.Generic;
 
@@ -100,7 +101,7 @@ namespace Helianthus
     /// You can add image files to your project resources and access them like this:
     /// return Resources.IconForThisComponent;
     /// </summary>
-    protected override System.Drawing.Bitmap Icon => null;
+    protected override Bitmap Icon => Properties.Resources.dliSuitability_icon;
 
 
     public override GH_Exposure Exposure => GH_Exposure.secondary;

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Drawing;
 
 using Grasshopper;
 using Grasshopper.Kernel;
@@ -17,7 +18,7 @@ namespace Helianthus
   public class DliVisualization : GH_Component
   {
     //TODO move to config
-    public static System.Drawing.Color Black_COLOR = System.Drawing.Color.FromArgb(255, 0, 0, 0);
+    public static Color Black_COLOR = Color.FromArgb(255, 0, 0, 0);
 
     public DliVisualization()
       : base("SiteSpecificCropVisualization",
@@ -128,9 +129,8 @@ namespace Helianthus
 
         //deaulting to a white color. Could allow for specification of base color...
         baseBarGraphMesh.VertexColors.CreateMonotoneMesh(
-            System.Drawing.Color.FromArgb(
-            Convert.ToInt32(legendData.getGraphBackgroundTransparency()),
-            250, 250, 250));
+            Color.FromArgb(Convert.ToInt32(
+                legendData.getGraphBackgroundTransparency()),250, 250, 250));
         listOfMesh.Add(baseBarGraphMesh);
 
         //loop through crop data to get Max DLI value
@@ -189,12 +189,15 @@ namespace Helianthus
                 double startGreen = 31;
                 double startBlue = 83;
 
-                int red = Convert.ToInt32(255 - (colorValueMultiplier * (255-startRed)));
-                int green = Convert.ToInt32(255 - (colorValueMultiplier * (255-startGreen)));
-                int blue = Convert.ToInt32(255 - (colorValueMultiplier * (255-startBlue)));   
+                int red = Convert.ToInt32(255 - (colorValueMultiplier *
+                    (255-startRed)));
+                int green = Convert.ToInt32(255 - (colorValueMultiplier *
+                    (255-startGreen)));
+                int blue = Convert.ToInt32(255 - (colorValueMultiplier *
+                    (255-startBlue)));   
 
-                mesh.VertexColors.CreateMonotoneMesh(
-                    System.Drawing.Color.FromArgb(255, red, green, blue));
+                mesh.VertexColors.CreateMonotoneMesh(Color.FromArgb(
+                    255, red, green, blue));
 
                 listOfMesh.Add(mesh);
             }
@@ -262,15 +265,7 @@ namespace Helianthus
     /// Provides an Icon for every component that will be visible in the User Interface.
     /// Icons need to be 24x24 pixels.
     /// </summary>
-    protected override System.Drawing.Bitmap Icon
-    {
-      get
-      { 
-        // You can add image files to your project resources and access them like this:
-        //return Resources.IconForThisComponent;
-        return null;
-      }
-    }
+    protected override Bitmap Icon => Properties.Resources.siteSpecificCropVis_icon;
 
     public override GH_Exposure Exposure => GH_Exposure.secondary;
 

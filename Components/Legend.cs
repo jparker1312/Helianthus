@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Drawing;
 
 using Grasshopper;
 using Grasshopper.Kernel;
@@ -102,15 +103,7 @@ namespace Helianthus
     /// Provides an Icon for every component that will be visible in the User Interface.
     /// Icons need to be 24x24 pixels.
     /// </summary>
-    protected override System.Drawing.Bitmap Icon
-    {
-      get
-      { 
-        // You can add image files to your project resources and access them like this:
-        //return Resources.IconForThisComponent;
-        return null;
-      }
-    }
+    protected override Bitmap Icon => Properties.Resources.legend_icon;
 
     public override GH_Exposure Exposure => GH_Exposure.primary;
 

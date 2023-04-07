@@ -10,7 +10,8 @@ namespace Helianthus
     public override string Name => "Helianthus";
 
     //Return a 24x24 pixel bitmap to represent this GHA library.
-    public override Bitmap Icon => null;
+    //public override Bitmap Icon => null;
+    public override Bitmap Icon => Properties.Resources.helianthus_icon;
 
     //Return a short string describing the purpose of this GHA library.
     public override string Description => "Crop-Centric Sunlight-Informed " +
@@ -24,4 +25,12 @@ namespace Helianthus
     //Return a string representing your preferred contact details.
     public override string AuthorContact => "";
   }
+
+  public class HelianthusCategoryIcon : GH_AssemblyPriority {
+        public override GH_LoadingInstruction PriorityLoad( ) {
+            Instances.ComponentServer.AddCategoryIcon("Helianthus", Properties.Resources.helianthus_icon);
+            Instances.ComponentServer.AddCategorySymbolName("Helianthus", 'H');
+            return GH_LoadingInstruction.Proceed;
+        }
+    }
 }

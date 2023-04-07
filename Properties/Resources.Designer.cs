@@ -60,9 +60,59 @@ namespace Helianthus.Properties {
         /// <summary>
         ///   Looks up a localized resource of type System.Drawing.Bitmap.
         /// </summary>
-        internal static System.Drawing.Bitmap importCropData {
+        internal static System.Drawing.Bitmap dliSuitability_icon {
             get {
-                object obj = ResourceManager.GetObject("importCropData", resourceCulture);
+                object obj = ResourceManager.GetObject("dliSuitability-icon", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap helianthus_icon {
+            get {
+                object obj = ResourceManager.GetObject("helianthus-icon", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap importCropData_icon {
+            get {
+                object obj = ResourceManager.GetObject("importCropData-icon", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap legend_icon {
+            get {
+                object obj = ResourceManager.GetObject("legend-icon", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap siteSpecificCropVis_icon {
+            get {
+                object obj = ResourceManager.GetObject("siteSpecificCropVis-icon", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap sunlightDli_icon {
+            get {
+                object obj = ResourceManager.GetObject("sunlightDli-icon", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
             }
         }

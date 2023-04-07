@@ -67,22 +67,13 @@ namespace Helianthus
         DA.SetDataList(0, cropList);
     }
 
-        ///// <summary>
-        ///// Provides an Icon for every component that will be visible in the User Interface.
-        ///// Icons need to be 24x24 pixels.
-        ///// </summary>
-        //protected override System.Drawing.Bitmap Icon
-        //{
-        //    get
-        //    {
-        //        // You can add image files to your project resources and access them like this:
-        //        //return Resources.IconForThisComponent;
-        //        return null;
-        //    }
-        //}
 
-   
-    protected override Bitmap Icon => Properties.Resources.importCropData;
+
+    ///// <summary>
+    ///// Provides an Icon for every component that will be visible in the User Interface.
+    ///// Icons need to be 24x24 pixels.
+    ///// </summary>
+    protected override Bitmap Icon => Properties.Resources.importCropData_icon;
 
     /// <summary>
     /// Each component must have a unique Guid to identify it. 
