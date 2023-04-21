@@ -1,7 +1,7 @@
 Helianthus
 ==========
 
-![Helianthus](./Resources/helianthus-icon-192.png)
+![Helianthus](./ReadmeResources/helianthus-icon-192.png)
 
 **Helianthus**: Crop-Centric Sunlight-Informed Tool for efficient urban agriculture design and planning
 
@@ -36,7 +36,9 @@ With Helianthus, it will be possible to:
 9. Analyse the results in real-time.
 10. Provide interactive agriculture graphics that support decision-making.
 11. Combine Helianthus with other plug-ins.
-12. Participate in the development of Helianthus by including data. These capabilities make Helianthus perfect for integrating agricultural knowledge within architecture, urban planning, and product design.
+12. Participate in the development of Helianthus by including data. 
+
+These capabilities make Helianthus perfect for integrating agricultural knowledge within architecture, urban planning, and product design.
 
 It is composed of three categories:
 1. Import
@@ -44,8 +46,10 @@ It is composed of three categories:
 3. Visualize Data
 
 Inside these categories, five components have been elaborated and are described consecutively.
-1. Crops list: Create a crop list from the Helianthus database.
-2. DLI Suitability: Filters crops based on DLI thresholds.
-3. Analyse the possibilities of urban agriculture in those locations.
-4. DLI Visualization: Visualize site-specific crop-surface DLI suitability.
-5. Legend: Fix legend parameters for visualizations.
+1. Import Crop Data: Create a crop list from the Helianthus database.
+2. Sunlight DLI: Converts solar radiation data into a daily light integral (DLI) constant.
+3. DLI Suitability: Filters crops based on DLI thresholds.
+4. Site-specific Crop Visualization: Visualize site-specific crop-surface DLI suitability.
+5. Legend Parameters: Fix legend parameters for visualizations.
+
+![Helianthus](./ReadmeResources/componentsList-01.png)
