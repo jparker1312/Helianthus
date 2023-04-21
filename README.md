@@ -7,3 +7,10 @@ Helianthus
 
 1\. Authors
 -----------
+
+- Alba Lombardia-Alonso
+- Joel Parker
+- Helianthus is currently developed at the Singapore University of Technology and Design (SUTD)
+
+2\. Introducing Helianthus
+-----------
