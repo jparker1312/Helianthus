@@ -1,16 +1,14 @@
 ﻿using System;
-using System.Drawing;
-using System.IO;
 using System.Collections.Generic;
+using System.Drawing;
 
 using Grasshopper;
 using Grasshopper.Kernel;
 using Rhino.Geometry;
-using System.Linq;
 
-namespace Helianthus
+namespace Helianthus.Components
 {
-  public class CropsList : GH_Component
+  public class GlassMaterial : GH_Component
   {
     /// <summary>
     /// Each implementation of GH_Component must provide a public 
@@ -19,10 +17,10 @@ namespace Helianthus
     /// Subcategory the panel. If you use non-existing tab or panel names, 
     /// new tabs/panels will automatically be created.
     /// </summary>
-    public CropsList()
-      : base("ImportCropData",
-             "Import Crop Data",
-             "Create List<> of Crop Data from a CSV file",
+    public GlassMaterial()
+      : base("GlassMaterial",
+             "Glass Material",
+             "Using default glass material transparency",
              "Helianthus",
              "01 | Import")
     {
@@ -33,8 +31,6 @@ namespace Helianthus
     /// </summary>
     protected override void RegisterInputParams(GH_Component.GH_InputParamManager pManager)
     {
-        pManager.AddTextParameter("CropDataCSV", "Crop Data CSV",
-            "CSV of Crop Data", GH_ParamAccess.item);
     }
 
     /// <summary>
@@ -42,8 +38,9 @@ namespace Helianthus
     /// </summary>
     protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
     {
-        pManager.AddGenericParameter("CropDataList", "Crop Data List",
-            "List of crops from the Helianthus Database", GH_ParamAccess.list);
+        pManager.AddNumberParameter("glass_transparency", "EPW Index",
+        "EPW Index currently using sensor readings based on Singapore study.",
+        GH_ParamAccess.item);
     }
 
     /// <summary>
@@ -53,25 +50,16 @@ namespace Helianthus
     /// to store data in output parameters.</param>
     protected override void SolveInstance(IGH_DataAccess DA)
     {
-        String cropDataFile = null;
-
-        if (!DA.GetData(0, ref cropDataFile)) { return; }
-        if (cropDataFile == null) { return; }
-        if (cropDataFile == "") { return; }
-
-        List<CropDataObject> cropList = File.ReadAllLines(cropDataFile)
-            .Skip(1)
-            .Select(v => CropDataObject.fromCSV(v))
-            .ToList();
-
-        DA.SetDataList(0, cropList);
+        DA.SetData(0, .8);
     }
 
-    ///// <summary>
-    ///// Provides an Icon for every component that will be visible in the User Interface.
-    ///// Icons need to be 24x24 pixels.
-    ///// </summary>
-    protected override Bitmap Icon => Properties.Resources.importCropData_icon;
+    /// <summary>
+    /// Provides an Icon for every component that will be visible in the User Interface.
+    /// Icons need to be 24x24 pixels.
+    /// </summary>
+    protected override Bitmap Icon => Properties.Resources.glassMaterial_icon;
+
+    public override GH_Exposure Exposure => GH_Exposure.tertiary;
 
     /// <summary>
     /// Each component must have a unique Guid to identify it. 
@@ -80,7 +68,7 @@ namespace Helianthus
     /// </summary>
     public override Guid ComponentGuid
     {
-      get { return new Guid("e55845e1-52a7-4eec-b373-1c2fcfece9f7"); }
+      get { return new Guid("bdebf069-45b2-40f9-880c-1f9e1edba393"); }
     }
   }
 }

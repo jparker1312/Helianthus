@@ -103,7 +103,6 @@ namespace Helianthus
     /// </summary>
     protected override Bitmap Icon => Properties.Resources.dliSuitability_icon;
 
-
     public override GH_Exposure Exposure => GH_Exposure.secondary;
 
     /// <summary>

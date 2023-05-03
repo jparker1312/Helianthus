@@ -70,6 +70,16 @@ namespace Helianthus.Properties {
         /// <summary>
         ///   Looks up a localized resource of type System.Drawing.Bitmap.
         /// </summary>
+        internal static System.Drawing.Bitmap glassMaterial_icon {
+            get {
+                object obj = ResourceManager.GetObject("glassMaterial-icon", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
         internal static System.Drawing.Bitmap helianthus_icon {
             get {
                 object obj = ResourceManager.GetObject("helianthus-icon", resourceCulture);
@@ -83,6 +93,16 @@ namespace Helianthus.Properties {
         internal static System.Drawing.Bitmap importCropData_icon {
             get {
                 object obj = ResourceManager.GetObject("importCropData-icon", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap index_icon {
+            get {
+                object obj = ResourceManager.GetObject("index-icon", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
             }
         }
@@ -113,6 +133,16 @@ namespace Helianthus.Properties {
         internal static System.Drawing.Bitmap sunlightDli_icon {
             get {
                 object obj = ResourceManager.GetObject("sunlightDli-icon", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap yieldVis_icon {
+            get {
+                object obj = ResourceManager.GetObject("yieldVis-icon", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
             }
         }
