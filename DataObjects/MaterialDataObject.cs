@@ -1,5 +1,5 @@
 ﻿using System;
-namespace Helianthus.DataObjects
+namespace Helianthus
 {
 	public class MaterialDataObject
 	{
