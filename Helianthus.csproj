@@ -21,6 +21,7 @@
     <None Remove="ReadmeResources\" />
     <None Remove="Properties\" />
     <None Remove="System.Resources.Extensions" />
+    <None Remove="Helpers\" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Components\" />
@@ -29,6 +30,7 @@
     <Folder Include="Examples\" />
     <Folder Include="ReadmeResources\" />
     <Folder Include="Properties\" />
+    <Folder Include="Helpers\" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Update="Properties\Resources.resx">

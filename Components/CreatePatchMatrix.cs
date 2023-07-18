@@ -159,7 +159,6 @@ namespace Helianthus
         }
         
         // mesh together the geometry and the context
-        //todo think this works...check that it doesn't update the other 
         contextGeometryInput.Append(geometryInput);
         Brep mergedContextGeometry = new Brep();
         foreach(Brep b in contextGeometryInput)

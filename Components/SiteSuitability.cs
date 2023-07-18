@@ -12,12 +12,11 @@ using Grasshopper.Kernel.Types.Transforms;
 using Rhino.Geometry;
 using Rhino.Geometry.Intersect;
 using Rhino.Geometry.Collections;
-using static Rhino.Render.TextureGraphInfo;
 using Rhino.DocObjects;
 
 namespace Helianthus
 {
-  public class MyComponent : GH_Component
+  public class SiteSuitability : GH_Component
   {
     int[] TREGENZA_PATCHES_PER_ROW = { 30, 30, 24, 24, 18, 12, 6, 1 };
     double[] TREGENZA_COEFFICIENTS = {
@@ -31,7 +30,7 @@ namespace Helianthus
     /// Subcategory the panel. If you use non-existing tab or panel names, 
     /// new tabs/panels will automatically be created.
     /// </summary>
-    public MyComponent()
+    public SiteSuitability()
       : base("Site_Suitability",
              "Site Suitability",
              "Visualize photosynthetic sunlight levels on surfaces to " +
@@ -52,8 +51,10 @@ namespace Helianthus
             "Rhino Surfaces or Rhino Meshes", GH_ParamAccess.list);
         pManager.AddGeometryParameter("ContextGeometry", "Context Geometry",
             "Rhino Surfaces or Rhino Meshes", GH_ParamAccess.list);
+        //todo decide if we want to give this option
         pManager.AddNumberParameter("GridSize", "Grid Size",
             "Grid Size for output geometry", GH_ParamAccess.item);
+        //todo add boolean run parameter
     }
 
     /// <summary>
@@ -65,10 +66,6 @@ namespace Helianthus
             GH_ParamAccess.list);
         pManager.AddMeshParameter("Mesh", "Mesh", "Mesh viz",
             GH_ParamAccess.list);
-        //pManager.AddLineParameter("Rays", "Rays", "Ray viz",
-        //    GH_ParamAccess.list);
-        //pManager.AddPointParameter("Points", "Points", "Points viz",
-        //    GH_ParamAccess.list);
     }
 
     /// <summary>
@@ -84,27 +81,27 @@ namespace Helianthus
         double gridSize = 1.0;
 
         if (!DA.GetData(0, ref weaFileLocation)) { return; }
-        //if (!DA.GetData(1, ref geometryInput)) { return; }
         if (!DA.GetDataList(1, geometryInput)) { return; }
-        //optional???
+        //todo optional???
         if (!DA.GetDataList(2, contextGeometryInput)) { }
         if (!DA.GetData(3, ref gridSize)) { return; }
 
-        //TODO not going to currently filter on the hoys
-        //TODO set WEA data info. maybe not needed
-        //WeaDataObject weaDataObject = new WeaDataObject(locationDataObject, radiationDataList);
-        //string weaFileName = weaDataObject.writeToWeaFile();
-
-        string gendaymtx_arg_direct = "-m 1 -d -A -h " + weaFileLocation;
-        string gendaymtx_arg_diffuse = "-m 1 -s -A -h " + weaFileLocation;
-        string directRadiationRGB = callGenDayMtx(gendaymtx_arg_direct);
-        string diffuseRadiationRGB = callGenDayMtx(gendaymtx_arg_diffuse);
+        string gendaymtx_arg_direct = GenDayMtxHelper.gendaymtx_arg_direct +
+                weaFileLocation;
+        string gendaymtx_arg_diffuse = GenDayMtxHelper.gendaymtx_arg_diffuse +
+                weaFileLocation;
+        GenDayMtxHelper genDayMtxHelper = new GenDayMtxHelper();
+        string directRadiationRGB = genDayMtxHelper.callGenDayMtx(
+            gendaymtx_arg_direct);
+        string diffuseRadiationRGB = genDayMtxHelper.callGenDayMtx(
+            gendaymtx_arg_diffuse);
 
         List<double> directRadiationList = new List<double>();
         List<double> diffuseRadiationList = new List<double>();
-
-        directRadiationList = convertRgbRadiationList(directRadiationRGB);
-        diffuseRadiationList = convertRgbRadiationList(diffuseRadiationRGB);
+        directRadiationList = genDayMtxHelper.convertRgbRadiationList(
+            directRadiationRGB);
+        diffuseRadiationList = genDayMtxHelper.convertRgbRadiationList(
+            diffuseRadiationRGB);
 
         //add radiation lists together
         List<double> totalRadiationList = new List<double>();
@@ -149,14 +146,12 @@ namespace Helianthus
             griddedMeshArrayList.Add(Mesh.CreateFromBrep(b, meshingParameters));
         }
 
-        //Mesh[] griddedMeshArray = Mesh.CreateFromBrep(
-        //    geometryInput, meshingParameters);
         Mesh meshJoined = new Mesh();
         foreach (Mesh[] meshArray in griddedMeshArrayList)
         {
             foreach(Mesh m in meshArray){ meshJoined.Append(m); }
         }
-        //foreach(Mesh m in griddedMeshArray){ meshJoined.Append(m); }
+
         meshJoined.FaceNormals.ComputeFaceNormals();
 
         //add offset distance for all points representing the faces of the
@@ -173,12 +168,10 @@ namespace Helianthus
         }
         
         // mesh together the geometry and the context
-        //todo think this works...check that it doesn't update the other
         foreach(Brep b in geometryInput)
         {
             contextGeometryInput.Append(b);
         }
-        //contextGeometryInput.Append(geometryInput);
         Brep mergedContextGeometry = new Brep();
         foreach(Brep b in contextGeometryInput)
         {
@@ -190,8 +183,8 @@ namespace Helianthus
         foreach(Mesh m in contextMeshArray){ contextMesh.Append(m); }
 
         //get tragenza dome vectors. to use for intersection later
-        Mesh tragenzaDomeMesh = getTragenzaDome();
-        //tragenzaDomeMesh.FaceNormals.ComputeFaceNormals();
+        SimulationHelper simulationHelper = new SimulationHelper();
+        Mesh tragenzaDomeMesh = simulationHelper.getTragenzaDome();
 
         //not doing north calculation. relying on user to orient north correctly
         List<Vector3d> allVectors = new List<Vector3d>();
@@ -223,8 +216,9 @@ namespace Helianthus
         //points and has a length equal to the vectors. 0 indicates a blocked ray and 1 indicates a ray that was not blocked.
         //angle_matrix -- A 2D matrix of angles in radians. Each sub-list of the matrix represents one of the normals and has a length equal to the
         //supplied vectors. Will be None if no normals are provided.
-        //todo add context mesh
-        IntersectionObject intersectionObject = intersectMeshRays(contextMesh, points, allVectors, meshJoined.FaceNormals);
+        IntersectionObject intersectionObject = simulationHelper.
+                intersectMeshRays(contextMesh, points, allVectors,
+                    meshJoined.FaceNormals);
         
         //compute the results
         //pt_rel = array of ival(0 or 1) * cos(ang)
@@ -260,63 +254,44 @@ namespace Helianthus
         double diffRadiation = maxRadiation - minRadiation;
 
         //todo change to rgb
-        //todo create steps of logical yellow
+        //todo create steps of logical green
         List<Color> colorRange = new List<Color>();
         colorRange.Add(Color.Black);
         colorRange.Add(Color.Gray);
         colorRange.Add(Color.Gold);
         colorRange.Add(Color.Yellow);
-
         double step = 1.0 / colorRange.Count;
 
         List<Color> faceColors = new List<Color>();
-
+        double colorIndTemp;
         foreach(double rad in finalRadiationList)
         {
-            //if (rad == minRadiation)
-            //{
-            //    faceColors.Add(colorRange.First());
-            //}
-            //else if (rad == maxRadiation)
-            //{
-            //    faceColors.Add(colorRange.Last());
-            //}
-            //else
-            //{
-                //get percentage of difference
-                double tempRadPercentage = rad / maxRadiation;
-                double colorIndTemp = step;
-                for(int colorIndCount = 0; colorIndCount < colorRange.Count; colorIndCount++)
+            //get percentage of difference
+            double tempRadPercentage = rad / maxRadiation;
+            colorIndTemp = step;
+            for(int colorIndCount = 0; colorIndCount < colorRange.Count; colorIndCount++)
+            {
+                if( tempRadPercentage <= colorIndTemp)
                 {
-                    if( tempRadPercentage <= colorIndTemp)
+                    Color minColor;
+                    if(colorIndCount > 0)
                     {
-                        //need to change how i work with the min and max. this still needs to be altered
-                        Color minColor;
-                        if(colorIndCount > 0)
-                        {
-                            minColor = colorRange[colorIndCount - 1];
-                        }
-                        else
-                        {
-                            minColor = colorRange[colorIndCount];
-                        }
-
-                        Color maxColor = colorRange[colorIndCount];
-                        double p = (tempRadPercentage - (colorIndTemp - step)) / (colorIndTemp - (colorIndTemp - step));
-
-                        double red = minColor.R * (1 - p) + maxColor.R * p;
-                        double green = minColor.G * (1 - p) + maxColor.G * p;
-                        double blue = minColor.B * (1 - p) + maxColor.B * p; 
-
-                        faceColors.Add(Color.FromArgb(255, Convert.ToInt32(red),
-                            Convert.ToInt32(green), Convert.ToInt32(blue)));
-
-                        break;
+                        minColor = colorRange[colorIndCount - 1];
                     }
+                    else
+                    { minColor = colorRange[colorIndCount]; }
 
-                    colorIndTemp += step;
+                    Color maxColor = colorRange[colorIndCount];
+                    double p = (tempRadPercentage - (colorIndTemp - step)) / (colorIndTemp - (colorIndTemp - step));
+                    double red = minColor.R * (1 - p) + maxColor.R * p;
+                    double green = minColor.G * (1 - p) + maxColor.G * p;
+                    double blue = minColor.B * (1 - p) + maxColor.B * p; 
+                    faceColors.Add(Color.FromArgb(255, Convert.ToInt32(red),
+                        Convert.ToInt32(green), Convert.ToInt32(blue)));
+                    break;
                 }
-            //}
+                colorIndTemp += step;
+            }
         }
 
         Mesh finalMesh = new Mesh();
@@ -329,7 +304,6 @@ namespace Helianthus
             Point3f c;
             Point3f d;
             meshJoined.Faces.GetFaceVertices(fInd, out a, out b, out c, out d);
-
             finalMesh.Vertices.Add(a);
             finalMesh.Vertices.Add(b);
             finalMesh.Vertices.Add(c);
@@ -341,8 +315,7 @@ namespace Helianthus
                 faceIndexNumber += 4;
             }
             else
-            {
-                
+            { 
                 finalMesh.Faces.AddFace(faceIndexNumber, faceIndexNumber + 1, faceIndexNumber + 2);
                 faceIndexNumber += 3;
             }
@@ -352,7 +325,7 @@ namespace Helianthus
         finalMesh.VertexColors.CreateMonotoneMesh(Color.Gray);
         faceIndexNumber = 0;
         int colorIndex = 0;
-        foreach (MeshFace f in meshJoined.Faces)
+        foreach (MeshFace f in finalMesh.Faces)
         {
             finalMesh.VertexColors[faceIndexNumber] = faceColors[colorIndex];
             finalMesh.VertexColors[faceIndexNumber + 1] = faceColors[colorIndex];
@@ -367,11 +340,10 @@ namespace Helianthus
             {
                 faceIndexNumber += 3;
             }
-
             colorIndex++; 
         }
 
-         //Create a plane with a zaxis vector. The center point is set at 0.001
+        //Create a plane with a zaxis vector. The center point is set at 0.001
         //so that the graph information will sit in front of the graph background
         //TODO: center point should be impacted by Z height parameter
         Point3d center_point = new Point3d(0, 0, 0.001);
@@ -415,12 +387,11 @@ namespace Helianthus
         {
             //get percentage of difference
             double tempPercentage = faceRowCount / barGraphYLength;
-            double colorIndTemp = step;
+            colorIndTemp = step;
             for(int colorIndCount = 0; colorIndCount < colorRange.Count; colorIndCount++)
             {
                 if( tempPercentage <= colorIndTemp)
                 {
-                    //need to change how i work with the min and max. this still needs to be altered
                     Color minColor;
                     if(colorIndCount > 0)
                     {
@@ -433,11 +404,9 @@ namespace Helianthus
 
                     Color maxColor = colorRange[colorIndCount];
                     double p = (tempPercentage - (colorIndTemp - step)) / (colorIndTemp - (colorIndTemp - step));
-
                     double red = minColor.R * (1 - p) + maxColor.R * p;
                     double green = minColor.G * (1 - p) + maxColor.G * p;
                     double blue = minColor.B * (1 - p) + maxColor.B * p; 
-
                     barGraphVertexColors.Add(Color.FromArgb(255, Convert.ToInt32(red),
                         Convert.ToInt32(green), Convert.ToInt32(blue)));
 
@@ -488,249 +457,6 @@ namespace Helianthus
 
         DA.SetDataList(0, finalRadiationList);
         DA.SetDataList(1, finalMeshList);
-
-        //List<Line> lines = new List<Line>();
-        //foreach (Ray3d r in intersectionObject.getRayList())
-        //{
-        //    lines.Add(new Line(r.Position, r.Direction));
-        //}
-
-        //List<Point3d> pointsd = new List<Point3d>();
-        //foreach(Ray3d r in intersectionObject.getRayList())
-        //{
-        //    pointsd.Add(r.Position);
-        //}
-
-        //DA.SetDataList(2, lines);
-        //DA.SetDataList(3, pointsd);
-    }
-
-    private Mesh getTragenzaDome()
-    {
-        // compute constants to be used in the generation of patch points
-        // patch row count is just the tragenza patch row counts. not subdivided in our case
-
-        //not sure about all of these
-        Vector3d base_vec = new Vector3d(0, 1, 0);
-        Vector3d rotateAxis = new Vector3d(1, 0, 0);
-        //double vertical_angle = Math.PI / (2 * TREGENZA_PATCHES_PER_ROW_2.Length + 1);
-        //should be 15
-        double vertical_angle = Math.PI / (2 * TREGENZA_PATCHES_PER_ROW.Length - 1);
-
-        // loop through the patch values and generate points for each vertex
-        List<Point3d> vertices = new List<Point3d>();
-        List<MeshFace> faces = new List<MeshFace>();
-
-        //foreach(TREGENZA_PATCHES_PER_ROW[0])
-        int pt_i = -2;
-        //int row_i = 0;
-
-        for(int row_count = 0; row_count < TREGENZA_PATCHES_PER_ROW.Length - 1; row_count++)
-        //foreach(int row_count in TREGENZA_PATCHES_PER_ROW_2)
-        {
-            pt_i += 2;
-            double horizontal_angle = -2 * Math.PI / TREGENZA_PATCHES_PER_ROW[row_count];
-            //double horizontal_angle = -2 * Math.PI / row_count;
-            Vector3d vec01 = new Vector3d(base_vec);
-            vec01.Rotate(vertical_angle * row_count, rotateAxis);
-            //vec01.Rotate(vertical_angle * row_i, rotateAxis);
-            Vector3d vec02 = new Vector3d(vec01);
-            vec02.Rotate(vertical_angle, rotateAxis);
-
-            double correctionAngle = -horizontal_angle / 2;
-            Vector3d vec1 = new Vector3d(vec01);
-            vec1.Rotate(correctionAngle, new Vector3d(0, 0, 1));
-            Vector3d vec2 = new Vector3d(vec02);
-            vec2.Rotate(correctionAngle, new Vector3d(0, 0, 1));
-            //vec1 = rotate_xy(vec1, correctionAngle);
-            //vec2 = rotate_xy(vec2, correctionAngle);
-            
-
-            //am i adding these vectors correctly and in the right order??? think so
-            vertices.Add(new Point3d(vec1));
-            vertices.Add(new Point3d(vec2));
-
-            //for(int patchCount = 0; patchCount < row_count; patchCount++)
-            for(int patchCount = 0; patchCount < TREGENZA_PATCHES_PER_ROW[row_count]; patchCount++)
-            {
-                //check horizonatl rotation method...
-                Vector3d vec3 = new Vector3d(vec1);
-                vec3.Rotate(horizontal_angle, new Vector3d(0, 0, 1));
-                Vector3d vec4 = new Vector3d(vec2);
-                vec4.Rotate(horizontal_angle, new Vector3d(0, 0, 1));
-                //vec3 = rotate_xy(vec3, horizontal_angle);
-                //vec4 = rotate_xy(vec4, horizontal_angle);
-
-                vertices.Add(new Point3d(vec3));
-                vertices.Add(new Point3d(vec4));
-
-                //not sure what this does....or how it works...
-                faces.Add(new MeshFace(pt_i, pt_i + 1, pt_i + 3, pt_i + 2));
-                pt_i += 2;
-                vec1 = vec3;
-                vec2 = vec4;
-            }
-            //row_i++;
-        }
-
-        //todo add this back after I figure out above
-        //add triangular faces to represent the last circular patch.....might not need extra patches adding because already added to tregenza patches
-        int endVertI = vertices.Count;
-        //todo need to check this 
-        int startVertI = vertices.Count - TREGENZA_PATCHES_PER_ROW[TREGENZA_PATCHES_PER_ROW.Length - 2] * 2 - 1;
-        //int startVertI = vertices.Count - TREGENZA_PATCHES_PER_ROW_2[TREGENZA_PATCHES_PER_ROW_2.Length - 1] * 2 - 1;
-        vertices.Add(new Point3d(0, 0, 1));
-        //for (int patchCount = 0; patchCount < TREGENZA_PATCHES_PER_ROW_2[TREGENZA_PATCHES_PER_ROW_2.Length - 1] * 2; patchCount += 2)
-        for (int patchCount = 0; patchCount < TREGENZA_PATCHES_PER_ROW[TREGENZA_PATCHES_PER_ROW.Length - 2] * 2; patchCount += 2)
-        {
-            faces.Add(new MeshFace(startVertI + patchCount, endVertI, startVertI + patchCount + 2));
-        }
-
-
-        //todo may need to look at the mesh constructor in ladybug. create the Mesh3D object and derive the patch vectors from the mesh
-        Mesh patch_mesh = new Mesh();
-        patch_mesh.Faces.AddFaces(faces);
-        patch_mesh.Vertices.AddVertices(vertices);
-        //think i should do this....
-        patch_mesh.FaceNormals.ComputeFaceNormals();
-        //think this last part is adding a patch to the end. need to check
-        //patch_mesh.FaceNormals
-
-        //convert face normals or return mesh??? think ill return mesh for now
-
-        return patch_mesh;
-    }
-
-    private Vector3d rotate_xy(Vector3d vec, double angle)
-    {
-        double cos_a = Math.Cos(angle);
-        double sin_a = Math.Sin(angle);
-        double qx = cos_a * vec.X - sin_a * vec.Y;
-        double qy = sin_a * vec.X + cos_a * vec.Y;
-        return new Vector3d(qx, qy, vec.Z);
-    }
-
-    private IntersectionObject intersectMeshRays(
-        Mesh contextMesh, List<Point3d> points, List<Vector3d> allVectors,
-        MeshFaceNormalList joinedMeshNormals)
-    {
-        //both matrixes, so might need to change format slightly
-        IntersectionObject intersectionObject = new IntersectionObject();
-        List<List<int>> intersectionMatrix = new List<List<int>>();
-        List<List<double>> angleMatrix = new List<List<double>>();
-        double cutoffAngle = Math.PI / 2;
-
-        //todo trials remove this later
-        //List<Ray3d> raysList = new List<Ray3d>();
-
-        //todo make this process run with parellel processing in the future??
-        for(int i = 0; i < points.Count; i++)
-        {
-            List<int> intList = new List<int>();
-            List<double> angleList = new List<double>();
-
-            Point3d point = points[i];
-            Vector3d normalVector = joinedMeshNormals[i];
-
-            foreach(Vector3d vec in allVectors)
-            {
-                double vectorAngle = Vector3d.VectorAngle(normalVector, vec);
-                angleList.Add(vectorAngle);
-
-                if(vectorAngle <= cutoffAngle)
-                {
-                    Ray3d ray = new Ray3d(point, vec);
-                    //todo remove this
-                    //raysList.Add(ray);
-
-                    if(Intersection.MeshRay(contextMesh, ray) >= 0)
-                    {
-                        intList.Add(0);
-                    }
-                    else
-                    {
-                        intList.Add(1);
-                    }
-                }
-                else //the vector is pointing below the surface
-                {
-                    intList.Add(0);
-                }
-            }
-
-            //not sure what the 'B' and 'd' things are in ladybug
-            intersectionMatrix.Add(intList);
-            angleMatrix.Add(angleList);
-        }
-
-
-        intersectionObject.setIntersectionMatrix(intersectionMatrix);
-        intersectionObject.setAngleMatrix(angleMatrix);
-        //todo remove
-        //intersectionObject.setRayList(raysList);
-
-        return intersectionObject; 
-    }
-
-    private List<double> convertRgbRadiationList(string radiationString)
-    {
-        List<double> radiationList = new List<double>();
-        string[] radiationRGB = radiationString.Split(
-            new string[] { "\r\n", "\r", "\n" },
-            StringSplitOptions.None
-        );
-
-        //todo temp value if all times are used
-        double wea_duration = 8760;
-        int rowCounter = 1;
-        for(int rowOfPatches_count =0; rowOfPatches_count < TREGENZA_PATCHES_PER_ROW.Length; rowOfPatches_count++)
-        {
-            var currentRowofPatches = new ArraySegment<string>(radiationRGB, rowCounter, TREGENZA_PATCHES_PER_ROW[rowOfPatches_count]);
-            foreach(string dr in currentRowofPatches)
-            {
-                string[] rgb = dr.Split(' ');
-                double rgbWeightedValue =
-                    0.265074126 * Convert.ToDouble(rgb[0]) +
-                    0.670114631 * Convert.ToDouble(rgb[1]) +
-                    0.064811243 * Convert.ToDouble(rgb[2]);
-                rgbWeightedValue = rgbWeightedValue *
-                    TREGENZA_COEFFICIENTS[rowOfPatches_count] *
-                    wea_duration / 1000;
-                radiationList.Add(rgbWeightedValue);
-            }
-            rowCounter += TREGENZA_PATCHES_PER_ROW[rowOfPatches_count];
-        }
-
-        return radiationList;
-    }
-
-    private string callGenDayMtx(string args)
-    {
-        //todo change the way we're doing the visible sunlight by using. think i was doig that already
-        // Use ProcessStartInfo class
-        ProcessStartInfo startInfo = new ProcessStartInfo();
-        startInfo.UseShellExecute = false;
-        startInfo.FileName = "/Users/joel/Projects/Programming/AlbaThesis/GrasshopperTools/radiance/bin/gendaymtx";
-        startInfo.WindowStyle = ProcessWindowStyle.Hidden;
-        startInfo.Arguments = args;
-        startInfo.RedirectStandardOutput = true;
-
-        string stdOut = "";  
-        try
-        {
-            using (Process exeProcess = Process.Start(startInfo))
-            {
-                    
-                exeProcess.WaitForExit();
-                stdOut = exeProcess.StandardOutput.ReadToEnd();
-            }
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine(ex.ToString());
-        }
-
-        return stdOut;
     }
 
     /// <summary>

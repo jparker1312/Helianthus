@@ -8,7 +8,7 @@ using Grasshopper;
 using Grasshopper.Kernel;
 using Rhino.Geometry;
 
-namespace Helianthus.Components
+namespace Helianthus
 {
   public class ImportEPW : GH_Component
   {
