@@ -39,8 +39,25 @@ namespace Helianthus.Components
             "Rhino Surface", GH_ParamAccess.item);
         pManager.AddGeometryParameter("ContextGeometry", "Context Geometry",
             "Rhino Surfaces or Rhino Meshes", GH_ParamAccess.list);
-        //todo add monthly value to determine the months to run
-        //todo add a path to place monthly wea files
+        pManager.AddPointParameter("Diagram_Centerpoint", "Diagram_Centerpoint",
+            "Centerpoint for diagran", GH_ParamAccess.item);
+        pManager.AddVectorParameter("Diagram_Rotation_Axis", "Diagram Rotation Axis",
+            "Diagram Rotation Axis - to help orient planes to top-view",
+            GH_ParamAccess.item);
+        pManager.AddNumberParameter("Diagram_Rotation", "Diagram Rotation",
+            "Diagram Rotation - to help orient planes to top-view",
+            GH_ParamAccess.item);
+        pManager.AddTextParameter("Location_For_Monthly_WEA_Files",
+        "Location For Monthly WEA Files",
+        "Location For Monthly WEA Files", GH_ParamAccess.item);
+        pManager.AddTextParameter("Month_Range","Month Range",
+            "List of Months for computation to run", GH_ParamAccess.list);
+        pManager.AddGenericParameter("CropsToVisualize", "Crops To Visualize",
+            "List of Crops that you want to visualize", GH_ParamAccess.list);
+        pManager.AddGenericParameter("LegendParameters", "Legend Parameters",
+            "Legend Parameters for the visualization", GH_ParamAccess.item);
+        pManager.AddBooleanParameter("Run_Simulation", "Run Simulation",
+            "Run Simulation", GH_ParamAccess.item);
     }
 
     /// <summary>
@@ -64,28 +81,51 @@ namespace Helianthus.Components
         string weaFileLocation = "";
         Brep geometryInput = new Brep();
         List<Brep> contextGeometryInput = new List<Brep>();
+        Point3d diagramCenterpoint = new Point3d();
+        Vector3d diagramRotationAxis = new Vector3d();
+        double diagramRotation = 0;
+        string pathname_MonthlyWeaFiles = "";
+        List<string> simulation_monthRange = new List<string>();
+        List<CropDataObject> cropDataInput = new List<CropDataObject>();
+        LegendDataObject legendData = new LegendDataObject();
+        bool run_Simulation = true;
 
         if (!DA.GetData(0, ref weaFileLocation)) { return; }
         if (!DA.GetData(1, ref geometryInput)) { return; }
         //todo optional???
         if (!DA.GetDataList(2, contextGeometryInput)) { return; }
+        if (!DA.GetData(3, ref diagramCenterpoint)) { return; }
+        if (!DA.GetData(4, ref diagramRotationAxis)) { return; }
+        if (!DA.GetData(5, ref diagramRotation)) { return; }
+        if (!DA.GetData(6, ref pathname_MonthlyWeaFiles)) { return; }
+        if (!DA.GetDataList(7, simulation_monthRange)) { return; }
+        if (!DA.GetDataList(8, cropDataInput)) { return; }
+        if (!DA.GetData(9, ref legendData)) { return; }
+        if (!DA.GetData(10, ref run_Simulation)) { return; }
+
+        if (!run_Simulation){ return; }
 
         WeaDataObject weaDataObject = new WeaDataObject(weaFileLocation);
 
         //create monthly wea files
-        //todo check if successful
-        string pathname = "/Users/joel/Projects/Programming/AlbaThesis/Helianthus/" +
-            "HelianthusData/monthlyFiles/";
-        weaDataObject.writeWeaDataToMonthlyFiles(pathname);
+        if (!weaDataObject.writeWeaDataToMonthlyFiles(pathname_MonthlyWeaFiles))
+        {
+            //todo throw error
+            return;
+        }
 
         //run monthly simulations
         GenDayMtxHelper genDayMtxHelper = new GenDayMtxHelper();
         List<string> directRadiationRGBList =
                 genDayMtxHelper.runMonthlyGenDayMtxSimulations(
-                    pathname, GenDayMtxHelper.gendaymtx_arg_direct);
+                    pathname_MonthlyWeaFiles,
+                    GenDayMtxHelper.gendaymtx_arg_direct,
+                    simulation_monthRange);
         List<string> diffuseRadiationRGBList =
                 genDayMtxHelper.runMonthlyGenDayMtxSimulations(
-                    pathname, GenDayMtxHelper.gendaymtx_arg_diffuse);
+                    pathname_MonthlyWeaFiles,
+                    GenDayMtxHelper.gendaymtx_arg_diffuse,
+                    simulation_monthRange);
 
         List<List<double>> monthlyDirectRadiationList = new List<List<double>>();
         List<List<double>> monthlyDiffuseRadiationList = new List<List<double>>();
@@ -182,6 +222,7 @@ namespace Helianthus.Components
                         intersectionObject, radiationList);
 
             //create the mesh and color
+            //todo put this inside getFaceColors
             double maxRadiation = finalRadiationList.Max();
             //double minRadiation = finalRadiationList.Min();
             //double diffRadiation = maxRadiation - minRadiation;
@@ -191,21 +232,51 @@ namespace Helianthus.Components
 
             monthlyFinalMesh = meshHelper.colorFinalMesh(monthlyFinalMesh, faceColors);
 
-            //todo add xy movement for monthly chart
-            //monthlyFinalMesh.Translate(
-            //    (monthlyFinalMesh.GetBoundingBox(true).Max.X -
-            //    monthlyFinalMesh.GetBoundingBox(true).Min.X) * monthCount,
-            //    0, 0);
+            monthlyFinalMesh.FaceNormals.ComputeFaceNormals();
 
+            Vector3d faceNrm = monthlyFinalMesh.FaceNormals.First();
+            if(faceNrm.IsPerpendicularTo(new Vector3d(0, 0, 1)))
+            {
+                Point3d cen = monthlyFinalMesh.GetBoundingBox(true).Center;
+                //todo or set perpendicular to itself?
+                faceNrm.Rotate(1.5708, new Vector3d(0, 0, 1));
+                //todo need to change this rotation for planes that are not completely vertical
+                monthlyFinalMesh.Rotate(-1.5708, faceNrm, cen);
+
+                if(diagramRotation != 0)
+                {
+                    double radians = (Math.PI / 180) * diagramRotation;
+                    monthlyFinalMesh.Rotate(radians, diagramRotationAxis, cen);
+                }
+            }
+
+            
             double xIncrement = (monthlyFinalMesh.GetBoundingBox(true).Max.X -
                 monthlyFinalMesh.GetBoundingBox(true).Min.X) * monthCount;
-            Point3d tempPt = new Point3d(500, 100, 1);
             Point3d centerPtMesh = monthlyFinalMesh.GetBoundingBox(true).Center;
-            Vector3d translateVector = Point3d.Subtract(tempPt, centerPtMesh);
+            Vector3d translateVector = Point3d.Subtract(
+                diagramCenterpoint, centerPtMesh);
             translateVector.X = translateVector.X + xIncrement;
             monthlyFinalMesh.Translate(translateVector);
 
             finalMeshList.Add(monthlyFinalMesh);
+
+
+
+            List<CropDataObject> cropListResult = new List<CropDataObject>();
+            DliHelper dliHelper = new DliHelper();
+            double maxDli = dliHelper.getDliFromX(maxRadiation);
+            foreach (CropDataObject crop in cropDataInput)
+            {
+                if (crop.getDli() < maxDli){ cropListResult.Add(crop); }
+            }
+
+            //todo add crops bar graph
+            BarGraphHelper barGraphHelper = new BarGraphHelper();
+            List<Mesh> barGraphMeshes = barGraphHelper.createBarGraph(
+                monthlyFinalMesh, cropDataInput, legendData);
+            finalMeshList.AddRange(barGraphMeshes);
+
             monthCount++;
         }
 

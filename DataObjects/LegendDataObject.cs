@@ -15,7 +15,7 @@ namespace Helianthus
 
 		public LegendDataObject()
 		{
-			graphOffset = new Point3d(1,0,.01);
+			graphOffset = new Point3d(0,0,.01);
 			graphScale = 1;
 			graphBackgroundTransparency = 50;
 		}

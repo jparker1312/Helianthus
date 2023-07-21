@@ -39,14 +39,17 @@ namespace Helianthus
             return stdOut;
         }
 
-        public List<string> runMonthlyGenDayMtxSimulations(string pathname, string args)
+        public List<string> runMonthlyGenDayMtxSimulations(string pathname, string args, List<string> monthlyRange)
         {
             List<string> monthlySimulations = new List<string>();
             for (int monthCount = 1; monthCount <= 12; monthCount++)
             {
-                string gendaymtx_arg = args + pathname + "weaMonth-" + monthCount + ".wea";
-                string radiationRGB = callGenDayMtx(gendaymtx_arg);
-                monthlySimulations.Add(radiationRGB);
+                if (monthlyRange.Contains(Convert.ToString(monthCount)))
+                {
+                    string gendaymtx_arg = args + pathname + "weaMonth-" + monthCount + ".wea";
+                    string radiationRGB = callGenDayMtx(gendaymtx_arg);
+                    monthlySimulations.Add(radiationRGB);
+                }
             }
             return monthlySimulations;
         }

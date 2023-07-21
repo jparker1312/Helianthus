@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Data;
 using System.Drawing;
+using System.Text;
 
 using Rhino.Geometry;
 
@@ -15,13 +16,20 @@ namespace Helianthus
 
 		public MeshHelper()
 		{
-             //todo change to rgb
+            //todo change to rgb
             //todo create steps of logical green
             colorRange = new List<Color>();
-            colorRange.Add(Color.Black);
-            colorRange.Add(Color.Gray);
-            colorRange.Add(Color.Gold);
-            colorRange.Add(Color.Yellow);
+            //colorRange.Add(Color.Black);
+            //colorRange.Add(Color.Gray);
+            //colorRange.Add(Color.Gold);
+            //colorRange.Add(Color.Yellow);
+            colorRange.Add(Color.FromArgb(5, 7, 0));
+            colorRange.Add(Color.FromArgb(41, 66, 0));
+            colorRange.Add(Color.FromArgb(78, 125, 0));
+            colorRange.Add(Color.FromArgb(114, 184, 0));
+            colorRange.Add(Color.FromArgb(150, 243, 0));
+            colorRange.Add(Color.FromArgb(176, 255, 47));
+            colorRange.Add(Color.FromArgb(198, 255, 106));
             step = 1.0 / colorRange.Count;
 		}
 
@@ -36,7 +44,8 @@ namespace Helianthus
                 colorIndTemp = step;
                 for(int colorIndCount = 0; colorIndCount < colorRange.Count; colorIndCount++)
                 {
-                    if( tempRadPercentage <= colorIndTemp)
+                    if( tempRadPercentage <= colorIndTemp ||
+                        (tempRadPercentage == 1 && colorIndCount == (colorRange.Count - 1)))
                     {
                         Color minColor;
                         if(colorIndCount > 0)
@@ -44,14 +53,22 @@ namespace Helianthus
                             minColor = colorRange[colorIndCount - 1];
                         }
                         else
-                        { minColor = colorRange[colorIndCount]; }
+                        {
+                            minColor = colorRange[colorIndCount];
+                        }
+
+                        if(tempRadPercentage == 1)
+                        {
+
+                        }
 
                         Color maxColor = colorRange[colorIndCount];
                         double p = (tempRadPercentage - (colorIndTemp - step)) / (colorIndTemp - (colorIndTemp - step));
                         double red = minColor.R * (1 - p) + maxColor.R * p;
                         double green = minColor.G * (1 - p) + maxColor.G * p;
-                        double blue = minColor.B * (1 - p) + maxColor.B * p; 
-                        faceColors.Add(Color.FromArgb(255, Convert.ToInt32(red),
+                        double blue = minColor.B * (1 - p) + maxColor.B * p;
+
+                        faceColors.Add(Color.FromArgb(Convert.ToInt32(red),
                             Convert.ToInt32(green), Convert.ToInt32(blue)));
                         break;
                     }
@@ -95,6 +112,7 @@ namespace Helianthus
             return finalMesh;
         }
 
+        //todo don't think this needs to return the mesh since it is returning parameter
         public Mesh colorFinalMesh(Mesh finalMesh, List<Color> faceColors)
         {
             finalMesh.VertexColors.CreateMonotoneMesh(Color.Gray);

@@ -105,6 +105,7 @@ namespace Helianthus
         //Get the remaining Y axis length
         double barGraphPanelHeight = maxBoundingBoxGeometry.Y - xAxisPanelHeight;
         //calculate tile size. 32 is the current max DLI. 1/32 == .03125
+        //todo this may be determined by an input
         double barGraphTileHeight = barGraphPanelHeight * .03125;
         //spacer using 10% of tile size currently
         double tileSpacerSize = barGraphTileHeight * .1;

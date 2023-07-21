@@ -55,6 +55,8 @@ namespace Helianthus
         pManager.AddNumberParameter("GridSize", "Grid Size",
             "Grid Size for output geometry", GH_ParamAccess.item);
         //todo add boolean run parameter
+        pManager.AddBooleanParameter("Run_Simulation", "Run Simulation",
+            "Run Simulation", GH_ParamAccess.item);
     }
 
     /// <summary>
@@ -79,12 +81,15 @@ namespace Helianthus
         List<Brep> geometryInput = new List<Brep>();
         List<Brep> contextGeometryInput = new List<Brep>();
         double gridSize = 1.0;
+        bool run_Simulation = true;
 
         if (!DA.GetData(0, ref weaFileLocation)) { return; }
         if (!DA.GetDataList(1, geometryInput)) { return; }
         //todo optional???
         if (!DA.GetDataList(2, contextGeometryInput)) { }
         if (!DA.GetData(3, ref gridSize)) { return; }
+        if (!DA.GetData(4, ref run_Simulation)) { return; }
+        if (!run_Simulation){ return; }
 
         string gendaymtx_arg_direct = GenDayMtxHelper.gendaymtx_arg_direct +
                 weaFileLocation;
@@ -253,95 +258,108 @@ namespace Helianthus
         double minRadiation = finalRadiationList.Min();
         double diffRadiation = maxRadiation - minRadiation;
 
-        //todo change to rgb
-        //todo create steps of logical green
-        List<Color> colorRange = new List<Color>();
-        colorRange.Add(Color.Black);
-        colorRange.Add(Color.Gray);
-        colorRange.Add(Color.Gold);
-        colorRange.Add(Color.Yellow);
-        double step = 1.0 / colorRange.Count;
+        //todo check this
+        MeshHelper meshHelper = new MeshHelper();
+        List<Color> faceColors = meshHelper.getFaceColors(finalRadiationList, maxRadiation);
 
-        List<Color> faceColors = new List<Color>();
-        double colorIndTemp;
-        foreach(double rad in finalRadiationList)
-        {
-            //get percentage of difference
-            double tempRadPercentage = rad / maxRadiation;
-            colorIndTemp = step;
-            for(int colorIndCount = 0; colorIndCount < colorRange.Count; colorIndCount++)
-            {
-                if( tempRadPercentage <= colorIndTemp)
-                {
-                    Color minColor;
-                    if(colorIndCount > 0)
-                    {
-                        minColor = colorRange[colorIndCount - 1];
-                    }
-                    else
-                    { minColor = colorRange[colorIndCount]; }
+        
 
-                    Color maxColor = colorRange[colorIndCount];
-                    double p = (tempRadPercentage - (colorIndTemp - step)) / (colorIndTemp - (colorIndTemp - step));
-                    double red = minColor.R * (1 - p) + maxColor.R * p;
-                    double green = minColor.G * (1 - p) + maxColor.G * p;
-                    double blue = minColor.B * (1 - p) + maxColor.B * p; 
-                    faceColors.Add(Color.FromArgb(255, Convert.ToInt32(red),
-                        Convert.ToInt32(green), Convert.ToInt32(blue)));
-                    break;
-                }
-                colorIndTemp += step;
-            }
-        }
+        ////todo change to rgb
+        ////todo create steps of logical green
+        //List<Color> colorRange = new List<Color>();
+        //colorRange.Add(Color.Black);
+        //colorRange.Add(Color.Gray);
+        //colorRange.Add(Color.Gold);
+        //colorRange.Add(Color.Yellow);
+        //double step = 1.0 / colorRange.Count;
 
-        Mesh finalMesh = new Mesh();
-        int faceIndexNumber = 0;
-        int fInd = 0;
-        foreach (MeshFace f in meshJoined.Faces)
-        {
-            Point3f a;
-            Point3f b;
-            Point3f c;
-            Point3f d;
-            meshJoined.Faces.GetFaceVertices(fInd, out a, out b, out c, out d);
-            finalMesh.Vertices.Add(a);
-            finalMesh.Vertices.Add(b);
-            finalMesh.Vertices.Add(c);
+        //double colorIndTemp;
+        //foreach(double rad in finalRadiationList)
+        //{
+        //    //get percentage of difference
+        //    double tempRadPercentage = rad / maxRadiation;
+        //    colorIndTemp = step;
             
-            if (f.IsQuad)
-            {
-                finalMesh.Vertices.Add(d);
-                finalMesh.Faces.AddFace(faceIndexNumber, faceIndexNumber + 1, faceIndexNumber + 2, faceIndexNumber + 3);
-                faceIndexNumber += 4;
-            }
-            else
-            { 
-                finalMesh.Faces.AddFace(faceIndexNumber, faceIndexNumber + 1, faceIndexNumber + 2);
-                faceIndexNumber += 3;
-            }
-            fInd++;
-        }
+        //    for(int colorIndCount = 0; colorIndCount < colorRange.Count; colorIndCount++)
+        //    {
+        //        //todo add statement from mesh helper or just call mesh helper
+        //        if( tempRadPercentage <= colorIndTemp)
+        //        {
+        //            Color minColor;
+        //            if(colorIndCount > 0)
+        //            {
+        //                minColor = colorRange[colorIndCount - 1];
+        //            }
+        //            else
+        //            { minColor = colorRange[colorIndCount]; }
 
-        finalMesh.VertexColors.CreateMonotoneMesh(Color.Gray);
-        faceIndexNumber = 0;
-        int colorIndex = 0;
-        foreach (MeshFace f in finalMesh.Faces)
-        {
-            finalMesh.VertexColors[faceIndexNumber] = faceColors[colorIndex];
-            finalMesh.VertexColors[faceIndexNumber + 1] = faceColors[colorIndex];
-            finalMesh.VertexColors[faceIndexNumber + 2] = faceColors[colorIndex];
+        //            Color maxColor = colorRange[colorIndCount];
+        //            double p = (tempRadPercentage - (colorIndTemp - step)) / (colorIndTemp - (colorIndTemp - step));
+        //            double red = minColor.R * (1 - p) + maxColor.R * p;
+        //            double green = minColor.G * (1 - p) + maxColor.G * p;
+        //            double blue = minColor.B * (1 - p) + maxColor.B * p; 
+        //            faceColors.Add(Color.FromArgb(255, Convert.ToInt32(red),
+        //                Convert.ToInt32(green), Convert.ToInt32(blue)));
+        //            break;
+        //        }
+        //        colorIndTemp += step;
+        //    }
+        //}
 
-            if (f.IsQuad)
-            {
-                finalMesh.VertexColors[faceIndexNumber + 3] = faceColors[colorIndex];
-                faceIndexNumber += 4;
-            }
-            else
-            {
-                faceIndexNumber += 3;
-            }
-            colorIndex++; 
-        }
+        
+        Mesh finalMesh = meshHelper.createFinalMesh(meshJoined);
+
+        //Mesh finalMesh = new Mesh();
+        //int faceIndexNumber = 0;
+        //int fInd = 0;
+        //foreach (MeshFace f in meshJoined.Faces)
+        //{
+        //    Point3f a;
+        //    Point3f b;
+        //    Point3f c;
+        //    Point3f d;
+        //    meshJoined.Faces.GetFaceVertices(fInd, out a, out b, out c, out d);
+        //    finalMesh.Vertices.Add(a);
+        //    finalMesh.Vertices.Add(b);
+        //    finalMesh.Vertices.Add(c);
+            
+        //    if (f.IsQuad)
+        //    {
+        //        finalMesh.Vertices.Add(d);
+        //        finalMesh.Faces.AddFace(faceIndexNumber, faceIndexNumber + 1, faceIndexNumber + 2, faceIndexNumber + 3);
+        //        faceIndexNumber += 4;
+        //    }
+        //    else
+        //    { 
+        //        finalMesh.Faces.AddFace(faceIndexNumber, faceIndexNumber + 1, faceIndexNumber + 2);
+        //        faceIndexNumber += 3;
+        //    }
+        //    fInd++;
+        //}
+
+        //todo see if this works without assigning back to finalmesh
+        meshHelper.colorFinalMesh(finalMesh, faceColors);
+
+        //finalMesh.VertexColors.CreateMonotoneMesh(Color.Gray);
+        //int faceIndexNumber = 0;
+        //int colorIndex = 0;
+        //foreach (MeshFace f in finalMesh.Faces)
+        //{
+        //    finalMesh.VertexColors[faceIndexNumber] = faceColors[colorIndex];
+        //    finalMesh.VertexColors[faceIndexNumber + 1] = faceColors[colorIndex];
+        //    finalMesh.VertexColors[faceIndexNumber + 2] = faceColors[colorIndex];
+
+        //    if (f.IsQuad)
+        //    {
+        //        finalMesh.VertexColors[faceIndexNumber + 3] = faceColors[colorIndex];
+        //        faceIndexNumber += 4;
+        //    }
+        //    else
+        //    {
+        //        faceIndexNumber += 3;
+        //    }
+        //    colorIndex++; 
+        //}
 
         //Create a plane with a zaxis vector. The center point is set at 0.001
         //so that the graph information will sit in front of the graph background
@@ -369,14 +387,29 @@ namespace Helianthus
         //offset starter plane on z axis so that it does not interfer with
         //ground geometry. TODO: Take this as input 
         Plane baseBarGraphPlane = new Plane(new Point3d(0, 0, 0.0001), zaxis);
+        int xCount = Convert.ToInt32(xIntervalBaseMesh.Max-xIntervalBaseMesh.Min);
+        int yCount = Convert.ToInt32(yintervalBaseMesh.Max-yintervalBaseMesh.Min);
+        if(xCount < 1){ xCount = 1; }
+        if(yCount < 1){ yCount = 1; }
         Mesh baseBarGraphMesh = Mesh.CreateFromPlane(baseBarGraphPlane,
-            xIntervalBaseMesh, yintervalBaseMesh,
-            Convert.ToInt32(xIntervalBaseMesh.Max-xIntervalBaseMesh.Min),
-            Convert.ToInt32(yintervalBaseMesh.Max-yintervalBaseMesh.Min));
+            xIntervalBaseMesh, yintervalBaseMesh,xCount, yCount);
 
         //deaulting to a white color. Could allow for specification of base color...
         baseBarGraphMesh.VertexColors.CreateMonotoneMesh(
             Color.FromArgb(250,250, 250, 250));
+
+
+        //todo remove temp
+        List<Color> colorRange = new List<Color>();
+        colorRange.Add(Color.FromArgb(5, 7, 0));
+        colorRange.Add(Color.FromArgb(41, 66, 0));
+        colorRange.Add(Color.FromArgb(78, 125, 0));
+        colorRange.Add(Color.FromArgb(114, 184, 0));
+        colorRange.Add(Color.FromArgb(150, 243, 0));
+        colorRange.Add(Color.FromArgb(176, 255, 47));
+        colorRange.Add(Color.FromArgb(198, 255, 106));
+        double step = 1.0 / colorRange.Count;
+        double colorIndTemp;
 
         List<Color> barGraphVertexColors = new List<Color>();
         int barGraphXLength = Convert.ToInt32(xIntervalBaseMesh.Max - xIntervalBaseMesh.Min) + 1;
@@ -422,7 +455,7 @@ namespace Helianthus
             }
         }
 
-        faceIndexNumber = 0;
+        int faceIndexNumber = 0;
         foreach (Color c in barGraphVertexColors)
         {
             baseBarGraphMesh.VertexColors[faceIndexNumber] = c;
