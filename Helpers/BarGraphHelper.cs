@@ -8,14 +8,11 @@ namespace Helianthus
 {
 	public class BarGraphHelper
 	{
-        //TODO move to config
-        public static Color Black_COLOR = Color.FromArgb(255, 0, 0, 0);
-
 		public BarGraphHelper()
 		{
 		}
 
-		public List<Mesh> createBarGraph(Mesh meshInput, List<CropDataObject> cropDataInput, LegendDataObject legendData)
+		public Mesh createBarGraph(Mesh meshInput, List<CropDataObject> cropDataInput, LegendDataObject legendData)
 		{
 			//Create empty output object mesh list
             List<Mesh> listOfMesh = new List<Mesh>();
@@ -58,28 +55,29 @@ namespace Helianthus
             double barGraphTileWidth = barGraphTileHeight * 2;
             //y key table area will be 1/3 the size of a tile in x length
             double yAxisPanelWidth = barGraphTileWidth * .33;
-            double xAxisBarGraphLength = cropDataInput.Count *
-                    (barGraphTileWidth + tileSpacerSize) + yAxisPanelWidth;
+            //double xAxisBarGraphLength = cropDataInput.Count *
+            //        (barGraphTileWidth + tileSpacerSize) + yAxisPanelWidth;
 
-            Interval xIntervalBaseMesh = new Interval(barGraphXStartPoint,
-                barGraphXStartPoint + xAxisBarGraphLength);
             double finalYStartPoint = barGraphYStartPoint - boundingBoxHeight - 1;
-            Interval yintervalBaseMesh = new Interval(finalYStartPoint,
-                finalYStartPoint + boundingBoxHeight);
+
+            //Interval xIntervalBaseMesh = new Interval(barGraphXStartPoint,
+            //    barGraphXStartPoint + xAxisBarGraphLength);
+            //Interval yintervalBaseMesh = new Interval(finalYStartPoint,
+            //    finalYStartPoint + boundingBoxHeight);
 
             //offset starter plane on z axis so that it does not interfer with
             //ground geometry. TODO: Take this as input 
-            Plane baseBarGraphPlane = new Plane(new Point3d(0, 0, 0.0001), zaxis);
-            Mesh baseBarGraphMesh = Mesh.CreateFromPlane(baseBarGraphPlane,
-                xIntervalBaseMesh, yintervalBaseMesh, 1, 1);
+            //Plane baseBarGraphPlane = new Plane(new Point3d(0, 0, 0.0001), zaxis);
+            //Mesh baseBarGraphMesh = Mesh.CreateFromPlane(baseBarGraphPlane,
+            //    xIntervalBaseMesh, yintervalBaseMesh, 1, 1);
 
             //baseBarGraphMesh.Translate(new Vector3d(0, -boundingBoxHeight - 1, 0));
 
             //deaulting to a white color. Could allow for specification of base color...
-            baseBarGraphMesh.VertexColors.CreateMonotoneMesh(
-                Color.FromArgb(Convert.ToInt32(
-                    legendData.getGraphBackgroundTransparency()),250, 250, 250));
-            listOfMesh.Add(baseBarGraphMesh);
+            //baseBarGraphMesh.VertexColors.CreateMonotoneMesh(
+            //    Color.FromArgb(Convert.ToInt32(
+            //        legendData.getGraphBackgroundTransparency()),250, 250, 250));
+            //listOfMesh.Add(baseBarGraphMesh);
 
             //loop through crop data to get Max DLI value
             int cropMaxDli = 0;
@@ -90,11 +88,26 @@ namespace Helianthus
 
             //detault to text height = .1 and then scale??. Add as a constant??
             DimensionStyle defaultDimensionStyle = new DimensionStyle();
-            defaultDimensionStyle.TextHeight = .1 * legendData.getGraphScale();
+            defaultDimensionStyle.TextHeight = .2 * legendData.getGraphScale();
 
+            MeshHelper meshHelper = new MeshHelper();
             double yPanelStartPos = 0;
             int cropCount = 0;
             //loop through each crop, list name, create bar graph tiles
+
+
+
+            List<Color> colorRange = new List<Color>();
+            colorRange.Add(Color.FromArgb(5, 7, 0));
+            colorRange.Add(Color.FromArgb(41, 66, 0));
+            colorRange.Add(Color.FromArgb(78, 125, 0));
+            colorRange.Add(Color.FromArgb(114, 184, 0));
+            colorRange.Add(Color.FromArgb(150, 243, 0));
+            colorRange.Add(Color.FromArgb(176, 255, 47));
+            colorRange.Add(Color.FromArgb(198, 255, 106));
+            double step = 1.0 / colorRange.Count;
+
+
             foreach (CropDataObject crop in cropDataInput)
             {
                 //list the crop names along the X Axis
@@ -108,7 +121,7 @@ namespace Helianthus
 
                 TextEntity textEntityCropName = TextEntity.Create(crop.getSpecie(),
                     plane_crop, defaultDimensionStyle, true, xAxisPanelHeight, 0);
-                listOfMesh.AddRange(createTextMesh(textEntityCropName, defaultDimensionStyle));
+                listOfMesh.AddRange(meshHelper.createTextMesh(textEntityCropName, defaultDimensionStyle));
 
                 //calculate new X Interval positions for set of tiles
                 double tilePos_x_start = barGraphXStartPoint + ((cropCount) *
@@ -138,15 +151,49 @@ namespace Helianthus
                     double startGreen = 184;
                     double startBlue = 0;
 
-                    int red = Convert.ToInt32(255 - (colorValueMultiplier *
-                        (255-startRed)));
-                    int green = Convert.ToInt32(255 - (colorValueMultiplier *
-                        (255-startGreen)));
-                    int blue = Convert.ToInt32(255 - (colorValueMultiplier *
-                        (255-startBlue)));   
+                    //int red = Convert.ToInt32(255 - (colorValueMultiplier *
+                    //    (255-startRed)));
+                    //int green = Convert.ToInt32(255 - (colorValueMultiplier *
+                    //    (255-startGreen)));
+                    //int blue = Convert.ToInt32(255 - (colorValueMultiplier *
+                    //    (255-startBlue)));
 
-                    mesh.VertexColors.CreateMonotoneMesh(Color.FromArgb(
-                        255, red, green, blue));
+
+
+                    double colorIndTemp = step;
+                    ///todo work-in-progress: add change for colors here
+                    for (int colorIndCount = 0; colorIndCount < colorRange.Count; colorIndCount++)
+                    {
+                        if (colorValueMultiplier <= colorIndTemp ||
+                            (colorValueMultiplier == 1 && colorIndCount == (colorRange.Count - 1)))
+                        {
+                            Color minColor;
+                            if (colorIndCount > 0)
+                            {
+                                minColor = colorRange[colorIndCount - 1];
+                            }
+                            else
+                            {
+                                minColor = colorRange[colorIndCount];
+                            }
+
+                            Color maxColor = colorRange[colorIndCount];
+
+                            double p = (colorValueMultiplier - (colorIndTemp - step)) / (colorIndTemp - (colorIndTemp - step));
+                            double red = minColor.R * (1 - p) + maxColor.R * p;
+                            double green = minColor.G * (1 - p) + maxColor.G * p;
+                            double blue = minColor.B * (1 - p) + maxColor.B * p;
+
+                            mesh.VertexColors.CreateMonotoneMesh(Color.FromArgb(
+                            255, Convert.ToInt32(red), Convert.ToInt32(green),
+                            Convert.ToInt32(blue)));
+
+                            break;
+                        }
+
+                        colorIndTemp += step;
+                    }
+
 
                     listOfMesh.Add(mesh);
                 }
@@ -168,7 +215,7 @@ namespace Helianthus
                 TextEntity textEntityDliCount = TextEntity.Create(dliCount.ToString(),
                     plane_cropDli, defaultDimensionStyle, true, yAxisPanelWidth, 0);
 
-                listOfMesh.AddRange(createTextMesh(textEntityDliCount, defaultDimensionStyle));
+                listOfMesh.AddRange(meshHelper.createTextMesh(textEntityDliCount, defaultDimensionStyle));
 
                 //Create line and text indicating the Avg Surface DLI
                 ////todo maybe dpnt need this???
@@ -194,24 +241,11 @@ namespace Helianthus
             }
             //Output the list of meshes
 
-            return listOfMesh;
-		}
+            Mesh finalMesh = new Mesh();
+            foreach(Mesh m in listOfMesh) { finalMesh.Append(m); }
 
-        private List<Mesh> createTextMesh(TextEntity textEntity, DimensionStyle dimensionStyle)
-        {
-            List<Mesh> listOfMeshes = new List<Mesh>();
-            Brep[] breps = textEntity.CreateSurfaces(dimensionStyle, 1, 0);
-            foreach(Brep b in breps)
-            {
-                Mesh[] meshArrayOfBreps = Mesh.CreateFromBrep(b, new MeshingParameters());
-                foreach(Mesh m in meshArrayOfBreps)
-                {
-                    m.VertexColors.CreateMonotoneMesh(Black_COLOR);
-                    listOfMeshes.Add(m);
-                }
-            }
-            return listOfMeshes;
-        }
+            return finalMesh;
+		}
 	}
 }
 

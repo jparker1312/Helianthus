@@ -3,13 +3,17 @@ using System.Collections.Generic;
 using System.Data;
 using System.Drawing;
 using System.Text;
-
 using Rhino.Geometry;
+using Rhino.DocObjects;
+using static Rhino.Render.TextureGraphInfo;
 
 namespace Helianthus
 {
 	public class MeshHelper
 	{
+
+        //TODO move to config
+        public static Color Black_COLOR = Color.FromArgb(255, 0, 0, 0);
 
         private List<Color> colorRange;
         private double step;
@@ -136,6 +140,92 @@ namespace Helianthus
                 colorIndex++;
             }
 
+            return finalMesh;
+        }
+
+        public Mesh create2dBaseMesh(Mesh inputMesh)
+        {
+            //Create a plane with a zaxis vector. The center point is set at 0.001
+            //so that the graph information will sit in front of the graph background
+            //TODO: center point should be impacted by Z height parameter
+            Point3d center_point = new Point3d(0, 0, 0.001);
+            Point3d height_point = new Point3d(0, 0, 10);
+            //todo Constant? probably
+            Vector3d zaxis = height_point - center_point;
+
+            //Get the bounding box for the input geometry.
+            //This will be used to offset and scale our graph
+            Point3d minBoundingBoxGeometry = inputMesh.GetBoundingBox(true).Min;
+            Point3d maxBoundingBoxGeometry = inputMesh.GetBoundingBox(true).Max;
+
+            //scale the bounding box based on input
+            //todo need to think about scale
+            //maxBoundingBoxGeometry = Point3d.Multiply(maxBoundingBoxGeometry, 1);
+            double boundingBoxWidth = maxBoundingBoxGeometry.X - minBoundingBoxGeometry.X;
+            double boundingBoxHeight = maxBoundingBoxGeometry.Y - minBoundingBoxGeometry.Y;
+
+            Interval xIntervalBaseMesh = new Interval(minBoundingBoxGeometry.X,
+                minBoundingBoxGeometry.X + boundingBoxWidth);
+            Interval yintervalBaseMesh = new Interval(minBoundingBoxGeometry.Y,
+                minBoundingBoxGeometry.Y + boundingBoxHeight);
+
+            //offset starter plane on z axis so that it does not interfer with
+            //ground geometry. TODO: Take this as input 
+            Plane basePlane = new Plane(new Point3d(0, 0, 0.0001), zaxis);
+            Mesh baseMesh = Mesh.CreateFromPlane(basePlane,
+                xIntervalBaseMesh, yintervalBaseMesh, 1, 1);
+
+            //deaulting to a white color. Could allow for specification of base color...
+            //todo make this editable
+            baseMesh.VertexColors.CreateMonotoneMesh(
+                Color.FromArgb(50, 250, 250, 250));
+
+            return baseMesh;
+        }
+
+        public List<Mesh> createTextMesh(TextEntity textEntity, DimensionStyle dimensionStyle)
+        {
+            List<Mesh> listOfMeshes = new List<Mesh>();
+            Brep[] breps = textEntity.CreateSurfaces(dimensionStyle, 1, 0);
+            foreach (Brep b in breps)
+            {
+                Mesh[] meshArrayOfBreps = Mesh.CreateFromBrep(b, new MeshingParameters());
+                foreach (Mesh m in meshArrayOfBreps)
+                {
+                    m.VertexColors.CreateMonotoneMesh(Black_COLOR);
+                    listOfMeshes.Add(m);
+                }
+            }
+            return listOfMeshes;
+        }
+
+        public Mesh getTitleTextMesh(string text, Mesh inputMesh)
+        {
+            //TODO: center point should be impacted by Z height parameter
+            Point3d center_point = new Point3d(0, 0, 0.001);
+            Point3d height_point = new Point3d(0, 0, 10);
+            //Constant? probably
+            Vector3d zaxis = height_point - center_point;
+
+            //TODO make z depth adjustable
+            DimensionStyle defaultDimensionStyle = new DimensionStyle();
+            defaultDimensionStyle.TextHeight = 2;
+
+            Point3d center_point_crop = new Point3d(
+                inputMesh.GetBoundingBox(true).Min.X,
+                inputMesh.GetBoundingBox(true).Max.Y + 5, 0.001);
+            Plane plane_cropDli = new Plane(center_point_crop, zaxis);
+
+            TextEntity textEntityDliCount = TextEntity.Create(text,
+                plane_cropDli, defaultDimensionStyle, true,
+                inputMesh.GetBoundingBox(true).Max.X -
+                inputMesh.GetBoundingBox(true).Min.X, 0);
+
+            List<Mesh> listMesh = createTextMesh(textEntityDliCount,
+                defaultDimensionStyle);
+
+            Mesh finalMesh = new Mesh();
+            foreach(Mesh m in listMesh) { finalMesh.Append(m); }
             return finalMesh;
         }
     }

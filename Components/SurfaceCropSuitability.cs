@@ -3,14 +3,19 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
 
-using Grasshopper;
 using Grasshopper.Kernel;
 using Rhino.Geometry;
 
 namespace Helianthus.Components
 {
+
   public class SurfaceCropSuitability : GH_Component
   {
+    enum Months  
+    {  
+        January, February, March, April, May, June, July, August, September, October, November, December  
+    };  
+
     /// <summary>
     /// Each implementation of GH_Component must provide a public 
     /// constructor without any arguments.
@@ -67,9 +72,17 @@ namespace Helianthus.Components
     {
         pManager.AddTextParameter("Out", "Out", "Input Parameters",
             GH_ParamAccess.list);
+        pManager.AddTextParameter("Radiation_List_By_Month",
+            "Radiation List By Month", "Radiation List By Month",
+            GH_ParamAccess.list);
+        pManager.AddGenericParameter("Crop_Recommendations_By_Month",
+            "Crop Recommendations By Month", "Crop Recommendations By Month",
+            GH_ParamAccess.list);
         pManager.AddMeshParameter("Mesh", "Mesh", "Mesh viz",
             GH_ParamAccess.list);
-    }
+        pManager.AddMeshParameter("Other_Mesh", "Other Mesh", "Mesh viz",
+            GH_ParamAccess.list);
+        }
 
     /// <summary>
     /// This is the method that actually does the work.
@@ -149,9 +162,7 @@ namespace Helianthus.Components
 
         for(int i = 0; i < monthlyDirectRadiationList.Count; i++)
         {
-            //List<double> monthDirectValues = monthlyDirectRadiationList[i];
-            //List<double> monthDiffuseValues = monthlyDiffuseRadiationList[i];
-            List<Double> totalRadiationValues = new List<double>();
+            List<double> totalRadiationValues = new List<double>();
             for(int lineCount = 0; lineCount < monthlyDirectRadiationList[i].Count; lineCount++)
             {
                 totalRadiationValues.Add(
@@ -164,7 +175,7 @@ namespace Helianthus.Components
         //caculate total radiation
         List<double> sum_totalRadiationList = new List<double>();
         double sum_totalRadiation;
-        foreach(List<Double> totalRadiationList in totalRadiationListByMonth)
+        foreach(List<double> totalRadiationList in totalRadiationListByMonth)
         {
             sum_totalRadiation = 0.0; 
             totalRadiationList.ForEach(x => sum_totalRadiation += x);
@@ -189,7 +200,7 @@ namespace Helianthus.Components
             List<double> groundRadiationList = new List<double>();
             foreach(double value in totalRadiationListByMonth[count])
             {
-                    groundRadiationList.Add(groundRadiationConstants[count]);
+                groundRadiationList.Add(groundRadiationConstants[count]);
             }
             totalRadiationListByMonth[count].AddRange(groundRadiationList);
         }
@@ -210,8 +221,13 @@ namespace Helianthus.Components
             contextMesh, points, allVectors, joinedMesh.FaceNormals);
 
         List<Mesh> finalMeshList = new List<Mesh>();
+        List<Mesh> otherMeshList = new List<Mesh>();
         MeshHelper meshHelper = new MeshHelper();
         Mesh finalMesh = meshHelper.createFinalMesh(joinedMesh);
+
+        //todo variable for previous bounding box if there is one
+        double previousX = 0;
+
         //start of specific monthly calls
         int monthCount = 0;
         foreach(List<double> radiationList in totalRadiationListByMonth)
@@ -229,9 +245,7 @@ namespace Helianthus.Components
 
             List<Color> faceColors = meshHelper.getFaceColors(
                 finalRadiationList, maxRadiation);
-
             monthlyFinalMesh = meshHelper.colorFinalMesh(monthlyFinalMesh, faceColors);
-
             monthlyFinalMesh.FaceNormals.ComputeFaceNormals();
 
             Vector3d faceNrm = monthlyFinalMesh.FaceNormals.First();
@@ -250,19 +264,20 @@ namespace Helianthus.Components
                 }
             }
 
-            
-            double xIncrement = (monthlyFinalMesh.GetBoundingBox(true).Max.X -
-                monthlyFinalMesh.GetBoundingBox(true).Min.X) * monthCount;
+            //todo should i allow input here?
+            int diagramSpacer = 2;
+
+            double xIncrement = (previousX + diagramSpacer) * monthCount;
+
+                //double xIncrement = (monthlyFinalMesh.GetBoundingBox(true).Max.X -
+                //    monthlyFinalMesh.GetBoundingBox(true).Min.X + diagramSpacer) * monthCount;
             Point3d centerPtMesh = monthlyFinalMesh.GetBoundingBox(true).Center;
             Vector3d translateVector = Point3d.Subtract(
                 diagramCenterpoint, centerPtMesh);
             translateVector.X = translateVector.X + xIncrement;
             monthlyFinalMesh.Translate(translateVector);
 
-            finalMeshList.Add(monthlyFinalMesh);
-
-
-
+            //todo optimize
             List<CropDataObject> cropListResult = new List<CropDataObject>();
             DliHelper dliHelper = new DliHelper();
             double maxDli = dliHelper.getDliFromX(maxRadiation);
@@ -273,15 +288,39 @@ namespace Helianthus.Components
 
             //todo add crops bar graph
             BarGraphHelper barGraphHelper = new BarGraphHelper();
-            List<Mesh> barGraphMeshes = barGraphHelper.createBarGraph(
+            Mesh barGraphMesh = barGraphHelper.createBarGraph(
                 monthlyFinalMesh, cropDataInput, legendData);
-            finalMeshList.AddRange(barGraphMeshes);
+
+            //add background plane
+            monthlyFinalMesh.Append(barGraphMesh);
+
+            //add month name
+            //todo change width calculation
+            Mesh monthTitleMesh = meshHelper.getTitleTextMesh(Convert.ToString((Months)monthCount),
+                monthlyFinalMesh);
+
+            monthlyFinalMesh.Append(monthTitleMesh);
+            finalMeshList.Add(monthlyFinalMesh);
+
+            //add bg plane
+            Mesh meshBase2dPlane = meshHelper.create2dBaseMesh(monthlyFinalMesh);
+            otherMeshList.Add(meshBase2dPlane);
+
+            previousX = meshBase2dPlane.GetBoundingBox(true).Max.X -
+                    meshBase2dPlane.GetBoundingBox(true).Min.X;
+            //finalMeshList.Add(meshBase2dPlane);
 
             monthCount++;
         }
 
+        //todo output input parameters
         DA.SetDataList(0, totalRadiationListByMonth);
-        DA.SetDataList(1, finalMeshList);
+
+        DA.SetDataList(1, totalRadiationListByMonth);
+        //todo fix out of crop recommended list
+        DA.SetDataList(2, cropDataInput);
+        DA.SetDataList(3, finalMeshList);
+        DA.SetDataList(4, otherMeshList);
     }
 
     /// <summary>
