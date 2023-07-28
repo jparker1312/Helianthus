@@ -12,7 +12,7 @@ namespace Helianthus
 		{
 		}
 
-		public Mesh createBarGraph(Mesh meshInput, List<CropDataObject> cropDataInput, LegendDataObject legendData)
+		public Mesh createBarGraph(Mesh meshInput, List<CropDataObject> cropDataInput, LegendDataObject legendData, double maxDli)
 		{
 			//Create empty output object mesh list
             List<Mesh> listOfMesh = new List<Mesh>();
@@ -80,15 +80,21 @@ namespace Helianthus
             //listOfMesh.Add(baseBarGraphMesh);
 
             //loop through crop data to get Max DLI value
-            int cropMaxDli = 0;
-            foreach (CropDataObject crop in cropDataInput)
-            {
-                if (crop.getDli() > cropMaxDli) { cropMaxDli = crop.getDli(); }
-            }
+
+            //todo keep or create new?
+            //foreach (CropDataObject crop in cropDataInput)
+            //{
+            //    if (crop.getDli() > cropMaxDli) { cropMaxDli = crop.getDli(); }
+            //}
+
+
+
+
+
 
             //detault to text height = .1 and then scale??. Add as a constant??
             DimensionStyle defaultDimensionStyle = new DimensionStyle();
-            defaultDimensionStyle.TextHeight = .2 * legendData.getGraphScale();
+            defaultDimensionStyle.TextHeight = .3 * legendData.getGraphScale();
 
             MeshHelper meshHelper = new MeshHelper();
             double yPanelStartPos = 0;
@@ -110,6 +116,7 @@ namespace Helianthus
 
             foreach (CropDataObject crop in cropDataInput)
             {
+
                 //list the crop names along the X Axis
                 //Divide tile length by 2 in order to place text with middle indentation
                 //todo might need legendData.getGraphOffset().Y
@@ -127,6 +134,8 @@ namespace Helianthus
                 double tilePos_x_start = barGraphXStartPoint + ((cropCount) *
                         (barGraphTileWidth + tileSpacerSize));
                 double tilePos_x_end = tilePos_x_start + barGraphTileWidth;
+
+
                 //add new tile for each dli value.
                 for (int dliCount = 1; dliCount <= crop.getDli(); dliCount++)
                 {
@@ -142,14 +151,14 @@ namespace Helianthus
                     //maxColor will be max dli
                     //determine the color value based on relation to max dli
                     double colorValueMultiplier = Convert.ToDouble(crop.getDli())/
-                            Convert.ToDouble(cropMaxDli);
+                            Convert.ToDouble(maxDli);
 
                     //based off of colors from graph but could be any values.
                     //Constant Graph Value for bar chart. TODO Can make the editable
                     //TODO remove from for loop
-                    double startRed = 114;
-                    double startGreen = 184;
-                    double startBlue = 0;
+                    //double startRed = 114;
+                    //double startGreen = 184;
+                    //double startBlue = 0;
 
                     //int red = Convert.ToInt32(255 - (colorValueMultiplier *
                     //    (255-startRed)));
@@ -203,7 +212,7 @@ namespace Helianthus
             }
 
             //YAxis DLI Panel
-            for(int dliCount = 0; dliCount <= cropMaxDli; dliCount++)
+            for(int dliCount = 0; dliCount <= maxDli; dliCount++)
             {
                 //Calculate the YAxis panel Y position using the current DLI count
                 // and taking consideration of the yOffset input parameter

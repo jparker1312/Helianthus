@@ -62,7 +62,6 @@ namespace Helianthus
                 StringSplitOptions.None
             );
 
-            //todo temp value if all times are used?
             double wea_duration = 8760;
             int rowCounter = 1;
             for(int rowOfPatches_count =0; rowOfPatches_count < SimulationHelper.TREGENZA_PATCHES_PER_ROW.Length; rowOfPatches_count++)
@@ -78,6 +77,7 @@ namespace Helianthus
                     rgbWeightedValue = rgbWeightedValue *
                         SimulationHelper.TREGENZA_COEFFICIENTS[rowOfPatches_count] *
                         wea_duration / 1000;
+
                     radiationList.Add(rgbWeightedValue);
                 }
                 rowCounter += SimulationHelper.TREGENZA_PATCHES_PER_ROW[rowOfPatches_count];

@@ -28,6 +28,7 @@ namespace Helianthus
             //results appends above values
             List<List<double>> finalIntersectionMatrix = new List<List<double>>();
             List<double> finalRadiationList = new List<double>();
+            DliHelper dliHelper = new DliHelper();
 
             for(int i = 0; i < intersectionObject.getIntersectionMatrix().Count; i++)
             {
@@ -46,10 +47,47 @@ namespace Helianthus
                 {
                     radiationResult += intersectionCalculationList[i3] * totalRadiationList[i3];
                 }
-                finalRadiationList.Add(radiationResult);
+
+                //convert to Dli
+                double dli = dliHelper.getDliFromX(radiationResult);
+
+                finalRadiationList.Add(dli);
             }
 
             return finalRadiationList;
+        }
+
+        public List<double> getTotalRadiationList(
+            List<double> directRadiationList, List<double> diffuseRadiationList)
+        {
+            //add radiation lists together
+            List<double> totalRadiationList = new List<double>();
+            for (int i = 0; i < directRadiationList.Count; i++)
+            {
+                totalRadiationList.Add(directRadiationList[i] +
+                    diffuseRadiationList[i]);
+            }
+
+            //caculate total radiation
+            double sum_totalRadiation = 0.0;
+            totalRadiationList.ForEach(x => sum_totalRadiation += x);
+
+            //.2 is the default value for ground radiaiton
+            //get a ground radiation value that is constant and the same size list
+            //of the total radiation list
+            double groundRadiationConstant =
+                (sum_totalRadiation / totalRadiationList.Count) * .2;
+
+            //add ground radiation constant to total radiation list equal to the
+            //total size of the list. Should have 290 values
+            List<double> groundRadiationList = new List<double>();
+            foreach (double value in totalRadiationList)
+            {
+                groundRadiationList.Add(groundRadiationConstant);
+            }
+            totalRadiationList.AddRange(groundRadiationList);
+
+            return totalRadiationList;
         }
 
 		public Mesh meshMainGeometryWithContext(Brep geometryInput, List<Brep> contextGeometryInput)
@@ -205,8 +243,8 @@ namespace Helianthus
         }
 
         public IntersectionObject intersectMeshRays(
-        Mesh contextMesh, List<Point3d> points, List<Vector3d> allVectors,
-        MeshFaceNormalList joinedMeshNormals)
+            Mesh contextMesh, List<Point3d> points, List<Vector3d> allVectors,
+            MeshFaceNormalList joinedMeshNormals)
         {
             //both matrixes, so might need to change format slightly
             IntersectionObject intersectionObject = new IntersectionObject();

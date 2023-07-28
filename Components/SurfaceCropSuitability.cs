@@ -159,7 +159,6 @@ namespace Helianthus.Components
 
         //add radiation lists together
         List<List<double>> totalRadiationListByMonth = new List<List<double>>();
-
         for(int i = 0; i < monthlyDirectRadiationList.Count; i++)
         {
             List<double> totalRadiationValues = new List<double>();
@@ -209,6 +208,7 @@ namespace Helianthus.Components
         SimulationHelper simulationHelper = new SimulationHelper();
         Mesh joinedMesh = simulationHelper.createJoinedMesh(geometryInput);
         List<Point3d> points = simulationHelper.getMeshJoinedPoints(joinedMesh);
+        //todo duplicate in Mesh helper
         Mesh contextMesh = simulationHelper.meshMainGeometryWithContext(
             geometryInput, contextGeometryInput);
 
@@ -229,18 +229,19 @@ namespace Helianthus.Components
         double previousX = 0;
 
         //start of specific monthly calls
+        List<List<CropDataObject>> finalMonthlyCropList = new List<List<CropDataObject>>();
         int monthCount = 0;
         foreach(List<double> radiationList in totalRadiationListByMonth)
         {
             Mesh monthlyFinalMesh = finalMesh.DuplicateMesh();
             List<double> finalRadiationList =
-                    simulationHelper.computeFinalRadiationList(
-                        intersectionObject, radiationList);
+                simulationHelper.computeFinalRadiationList(
+                    intersectionObject, radiationList);
 
             //create the mesh and color
             //todo put this inside getFaceColors
             double maxRadiation = finalRadiationList.Max();
-            //double minRadiation = finalRadiationList.Min();
+            double minRadiation = finalRadiationList.Min();
             //double diffRadiation = maxRadiation - minRadiation;
 
             List<Color> faceColors = meshHelper.getFaceColors(
@@ -266,38 +267,70 @@ namespace Helianthus.Components
 
             //todo should i allow input here?
             int diagramSpacer = 2;
-
             double xIncrement = (previousX + diagramSpacer) * monthCount;
 
-                //double xIncrement = (monthlyFinalMesh.GetBoundingBox(true).Max.X -
-                //    monthlyFinalMesh.GetBoundingBox(true).Min.X + diagramSpacer) * monthCount;
+            //double xIncrement = (monthlyFinalMesh.GetBoundingBox(true).Max.X -
+            //    monthlyFinalMesh.GetBoundingBox(true).Min.X + diagramSpacer) * monthCount;
             Point3d centerPtMesh = monthlyFinalMesh.GetBoundingBox(true).Center;
             Vector3d translateVector = Point3d.Subtract(
                 diagramCenterpoint, centerPtMesh);
             translateVector.X = translateVector.X + xIncrement;
             monthlyFinalMesh.Translate(translateVector);
 
+            //add section header for tiled surface
+            Mesh surfaceDliTitleMesh = meshHelper.getTitleTextMesh(
+                "Surface DLI", monthlyFinalMesh, 1);
+
+            //add horizontal legend
+            LegendHelper legendHelper = new LegendHelper();
+            Mesh legendMesh = legendHelper.createLegend(monthlyFinalMesh, false);
+            monthlyFinalMesh.Append(legendMesh);
+            monthlyFinalMesh.Append(surfaceDliTitleMesh);
+
+            //Add legend descriptors
+            Mesh legendDescriptorMin = legendHelper.addLegendDescriptor(
+                Convert.ToString(Convert.ToInt32(minRadiation)) + " DLI",
+                    legendMesh.GetBoundingBox(true).Min.X,
+                    legendMesh.GetBoundingBox(true).Min.Y - 1, .5);
+            Mesh legendDescriptorMax = legendHelper.addLegendDescriptor(
+                Convert.ToString(Convert.ToInt32(maxRadiation)) + " DLI",
+                    legendMesh.GetBoundingBox(true).Max.X,
+                    legendMesh.GetBoundingBox(true).Min.Y - 1, .5);
+            legendDescriptorMax.Translate(new Vector3d(
+                legendDescriptorMax.GetBoundingBox(true).Min.X -
+                legendDescriptorMax.GetBoundingBox(true).Max.X, 0, 0));
+            monthlyFinalMesh.Append(legendDescriptorMin);
+            monthlyFinalMesh.Append(legendDescriptorMax);
+
+            //add section header for tiled surface
+            Mesh cropRecommendationsTitleMesh = meshHelper.getTitleTextMeshByPosition(
+                "Crop Recommendations",
+                new Point3d(monthlyFinalMesh.GetBoundingBox(true).Min.X,
+                monthlyFinalMesh.GetBoundingBox(true).Min.Y - 2, 0.001),
+                1,
+                monthlyFinalMesh.GetBoundingBox(true).Max.X -
+                monthlyFinalMesh.GetBoundingBox(true).Min.X);
+            monthlyFinalMesh.Append(cropRecommendationsTitleMesh);
+
             //todo optimize
             List<CropDataObject> cropListResult = new List<CropDataObject>();
             DliHelper dliHelper = new DliHelper();
-            double maxDli = dliHelper.getDliFromX(maxRadiation);
-            foreach (CropDataObject crop in cropDataInput)
-            {
-                if (crop.getDli() < maxDli){ cropListResult.Add(crop); }
-            }
+            //double maxDli = dliHelper.getDliFromX(maxRadiation);
+            //foreach (CropDataObject crop in cropDataInput)
+            //{
+            //    if (crop.getDli() < maxDli) { cropListResult.Add(crop); }
+            //}
 
             //todo add crops bar graph
             BarGraphHelper barGraphHelper = new BarGraphHelper();
             Mesh barGraphMesh = barGraphHelper.createBarGraph(
-                monthlyFinalMesh, cropDataInput, legendData);
-
-            //add background plane
+                monthlyFinalMesh, cropDataInput, legendData, maxRadiation);
             monthlyFinalMesh.Append(barGraphMesh);
 
             //add month name
             //todo change width calculation
-            Mesh monthTitleMesh = meshHelper.getTitleTextMesh(Convert.ToString((Months)monthCount),
-                monthlyFinalMesh);
+            Mesh monthTitleMesh = meshHelper.getTitleTextMesh(
+                Convert.ToString((Months)monthCount), monthlyFinalMesh, 2);
 
             monthlyFinalMesh.Append(monthTitleMesh);
             finalMeshList.Add(monthlyFinalMesh);
@@ -308,17 +341,28 @@ namespace Helianthus.Components
 
             previousX = meshBase2dPlane.GetBoundingBox(true).Max.X -
                     meshBase2dPlane.GetBoundingBox(true).Min.X;
-            //finalMeshList.Add(meshBase2dPlane);
+
+            List<CropDataObject> monthlyCropsThatFitRange = new List<CropDataObject>();
+            //todo change this. make this the string below. do this before bar graph call
+            foreach (CropDataObject crop in cropDataInput)
+            {
+                //todo need to get passed the max radiation value converted to dli
+                if (crop.getDli() < maxRadiation)
+                {
+                    monthlyCropsThatFitRange.Add(crop);
+                }
+            }
+
+            finalMonthlyCropList.Add(monthlyCropsThatFitRange); 
 
             monthCount++;
         }
 
         //todo output input parameters
         DA.SetDataList(0, totalRadiationListByMonth);
-
         DA.SetDataList(1, totalRadiationListByMonth);
         //todo fix out of crop recommended list
-        DA.SetDataList(2, cropDataInput);
+        DA.SetDataList(2, finalMonthlyCropList);
         DA.SetDataList(3, finalMeshList);
         DA.SetDataList(4, otherMeshList);
     }

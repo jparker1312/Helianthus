@@ -1,11 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Data;
 using System.Drawing;
-using System.Text;
+using System.Linq;
+
 using Rhino.Geometry;
 using Rhino.DocObjects;
-using static Rhino.Render.TextureGraphInfo;
 
 namespace Helianthus
 {
@@ -36,6 +35,64 @@ namespace Helianthus
             colorRange.Add(Color.FromArgb(198, 255, 106));
             step = 1.0 / colorRange.Count;
 		}
+
+        public Mesh createGriddedMesh(List<Brep> geometryInput, double gridSize)
+        {
+            Mesh joinedMesh = new Mesh();
+            MeshingParameters meshingParameters = new MeshingParameters();
+            meshingParameters.MaximumEdgeLength = gridSize;
+            meshingParameters.MinimumEdgeLength = gridSize;
+            meshingParameters.GridAspectRatio = 1;
+
+            List<Mesh[]> griddedMeshArrayList = new List<Mesh[]>();
+            foreach (Brep b in geometryInput)
+            {
+                griddedMeshArrayList.Add(Mesh.CreateFromBrep(b, meshingParameters));
+            }
+
+            foreach (Mesh[] meshArray in griddedMeshArrayList)
+            {
+                foreach (Mesh m in meshArray) { joinedMesh.Append(m); }
+            }
+
+            joinedMesh.FaceNormals.ComputeFaceNormals();
+
+            return joinedMesh;
+        }
+
+        public List<Point3d> getPointsOfMesh(Mesh joinedMesh)
+        {
+            List<Point3d> points = new List<Point3d>();
+            for (int i = 0; i < joinedMesh.Faces.Count; i++)
+            {
+                Point3d tempPoint = joinedMesh.Faces.GetFaceCenter(i);
+                Vector3d tempVector = joinedMesh.FaceNormals[i];
+                tempVector = tempVector * .1;
+                points.Add(new Point3d(tempPoint.X + tempVector.X,
+                                       tempPoint.Y + tempVector.Y,
+                                       tempPoint.Z + tempVector.Z));
+            }
+
+            return points;
+        }
+
+        public Mesh getContextMesh(List<Brep> geometryInput, List<Brep> contextGeometryInput)
+        {
+            foreach (Brep b in geometryInput) { contextGeometryInput.Append(b); }
+
+            Brep mergedContextGeometry = new Brep();
+            foreach (Brep b in contextGeometryInput)
+            {
+                mergedContextGeometry.Append(b);
+            }
+
+            Mesh[] contextMeshArray = Mesh.CreateFromBrep(
+                mergedContextGeometry, new MeshingParameters());
+            Mesh contextMesh = new Mesh();
+            foreach (Mesh m in contextMeshArray) { contextMesh.Append(m); }
+
+            return contextMesh;
+        }
 
 		public List<Color> getFaceColors(List<double> finalRadiationList, double maxRadiation)
 		{
@@ -199,7 +256,8 @@ namespace Helianthus
             return listOfMeshes;
         }
 
-        public Mesh getTitleTextMesh(string text, Mesh inputMesh)
+        public Mesh getTitleTextMesh(string text, Mesh inputMesh,
+            double textHeight)
         {
             //TODO: center point should be impacted by Z height parameter
             Point3d center_point = new Point3d(0, 0, 0.001);
@@ -209,7 +267,7 @@ namespace Helianthus
 
             //TODO make z depth adjustable
             DimensionStyle defaultDimensionStyle = new DimensionStyle();
-            defaultDimensionStyle.TextHeight = 2;
+            defaultDimensionStyle.TextHeight = textHeight;
 
             Point3d center_point_crop = new Point3d(
                 inputMesh.GetBoundingBox(true).Min.X,
@@ -226,6 +284,33 @@ namespace Helianthus
 
             Mesh finalMesh = new Mesh();
             foreach(Mesh m in listMesh) { finalMesh.Append(m); }
+            return finalMesh;
+        }
+
+        public Mesh getTitleTextMeshByPosition(string text, Point3d startTextPoint,
+            double textHeight, double rectWidth)
+        {
+            //TODO: center point should be impacted by Z height parameter
+            Point3d center_point = new Point3d(0, 0, 0.001);
+            Point3d height_point = new Point3d(0, 0, 10);
+            //Constant? probably
+            Vector3d zaxis = height_point - center_point;
+
+            //TODO make z depth adjustable
+            DimensionStyle defaultDimensionStyle = new DimensionStyle();
+            defaultDimensionStyle.TextHeight = textHeight;
+
+            Point3d center_point_crop = new Point3d(startTextPoint);
+            Plane plane_cropDli = new Plane(center_point_crop, zaxis);
+
+            TextEntity textEntityDliCount = TextEntity.Create(text,
+                plane_cropDli, defaultDimensionStyle, true, rectWidth, 0);
+
+            List<Mesh> listMesh = createTextMesh(textEntityDliCount,
+                defaultDimensionStyle);
+
+            Mesh finalMesh = new Mesh();
+            foreach (Mesh m in listMesh) { finalMesh.Append(m); }
             return finalMesh;
         }
     }
