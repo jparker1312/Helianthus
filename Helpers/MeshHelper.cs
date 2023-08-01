@@ -10,30 +10,17 @@ namespace Helianthus
 {
 	public class MeshHelper
 	{
-
-        //TODO move to config
-        public static Color Black_COLOR = Color.FromArgb(255, 0, 0, 0);
-
-        private List<Color> colorRange;
+        private Point3d center_point;
+        private Point3d height_point;
+        private Vector3d zaxis;
         private double step;
 
-		public MeshHelper()
+        public MeshHelper()
 		{
-            //todo change to rgb
-            //todo create steps of logical green
-            colorRange = new List<Color>();
-            //colorRange.Add(Color.Black);
-            //colorRange.Add(Color.Gray);
-            //colorRange.Add(Color.Gold);
-            //colorRange.Add(Color.Yellow);
-            colorRange.Add(Color.FromArgb(5, 7, 0));
-            colorRange.Add(Color.FromArgb(41, 66, 0));
-            colorRange.Add(Color.FromArgb(78, 125, 0));
-            colorRange.Add(Color.FromArgb(114, 184, 0));
-            colorRange.Add(Color.FromArgb(150, 243, 0));
-            colorRange.Add(Color.FromArgb(176, 255, 47));
-            colorRange.Add(Color.FromArgb(198, 255, 106));
-            step = 1.0 / colorRange.Count;
+            center_point = new Point3d(0, 0, 0.001);
+            height_point = new Point3d(0, 0, 10);
+            zaxis = height_point - center_point;
+            step = 1.0 / Config.DLI_COLOR_RANGE.Count;
 		}
 
         public Mesh createGriddedMesh(List<Brep> geometryInput, double gridSize)
@@ -47,14 +34,13 @@ namespace Helianthus
             List<Mesh[]> griddedMeshArrayList = new List<Mesh[]>();
             foreach (Brep b in geometryInput)
             {
-                griddedMeshArrayList.Add(Mesh.CreateFromBrep(b, meshingParameters));
+                griddedMeshArrayList.Add(Mesh.CreateFromBrep(b,
+                    meshingParameters));
             }
-
             foreach (Mesh[] meshArray in griddedMeshArrayList)
             {
                 foreach (Mesh m in meshArray) { joinedMesh.Append(m); }
             }
-
             joinedMesh.FaceNormals.ComputeFaceNormals();
 
             return joinedMesh;
@@ -103,19 +89,19 @@ namespace Helianthus
                 //get percentage of difference
                 double tempRadPercentage = rad / maxRadiation;
                 colorIndTemp = step;
-                for(int colorIndCount = 0; colorIndCount < colorRange.Count; colorIndCount++)
+                for(int colorIndCount = 0; colorIndCount < Config.DLI_COLOR_RANGE.Count; colorIndCount++)
                 {
                     if( tempRadPercentage <= colorIndTemp ||
-                        (tempRadPercentage == 1 && colorIndCount == (colorRange.Count - 1)))
+                        (tempRadPercentage == 1 && colorIndCount == (Config.DLI_COLOR_RANGE.Count - 1)))
                     {
                         Color minColor;
                         if(colorIndCount > 0)
                         {
-                            minColor = colorRange[colorIndCount - 1];
+                            minColor = Config.DLI_COLOR_RANGE[colorIndCount - 1];
                         }
                         else
                         {
-                            minColor = colorRange[colorIndCount];
+                            minColor = Config.DLI_COLOR_RANGE[colorIndCount];
                         }
 
                         if(tempRadPercentage == 1)
@@ -123,7 +109,7 @@ namespace Helianthus
 
                         }
 
-                        Color maxColor = colorRange[colorIndCount];
+                        Color maxColor = Config.DLI_COLOR_RANGE[colorIndCount];
                         double p = (tempRadPercentage - (colorIndTemp - step)) / (colorIndTemp - (colorIndTemp - step));
                         double red = minColor.R * (1 - p) + maxColor.R * p;
                         double green = minColor.G * (1 - p) + maxColor.G * p;
@@ -202,14 +188,6 @@ namespace Helianthus
 
         public Mesh create2dBaseMesh(Mesh inputMesh)
         {
-            //Create a plane with a zaxis vector. The center point is set at 0.001
-            //so that the graph information will sit in front of the graph background
-            //TODO: center point should be impacted by Z height parameter
-            Point3d center_point = new Point3d(0, 0, 0.001);
-            Point3d height_point = new Point3d(0, 0, 10);
-            //todo Constant? probably
-            Vector3d zaxis = height_point - center_point;
-
             //Get the bounding box for the input geometry.
             //This will be used to offset and scale our graph
             Point3d minBoundingBoxGeometry = inputMesh.GetBoundingBox(true).Min;
@@ -240,7 +218,28 @@ namespace Helianthus
             return baseMesh;
         }
 
-        public List<Mesh> createTextMesh(TextEntity textEntity, DimensionStyle dimensionStyle)
+
+        public Mesh create2dMesh(double height, double width)
+        {
+            Interval xIntervalBaseMesh = new Interval(0, width);
+            Interval yintervalBaseMesh = new Interval(0, height);
+
+            //offset starter plane on z axis so that it does not interfer with
+            //ground geometry. TODO: Take this as input 
+            Plane basePlane = new Plane(new Point3d(0, 0, 0.01), zaxis);
+            Mesh baseMesh = Mesh.CreateFromPlane(basePlane,
+                xIntervalBaseMesh, yintervalBaseMesh, 1, 1);
+
+            //deaulting to a white color. Could allow for specification of base color...
+            //todo make this editable
+            baseMesh.VertexColors.CreateMonotoneMesh(
+                Color.FromArgb(255, 255, 255, 255));
+
+            return baseMesh;
+        }
+
+        public Mesh createTextMesh(TextEntity textEntity,
+            DimensionStyle dimensionStyle)
         {
             List<Mesh> listOfMeshes = new List<Mesh>();
             Brep[] breps = textEntity.CreateSurfaces(dimensionStyle, 1, 0);
@@ -249,22 +248,18 @@ namespace Helianthus
                 Mesh[] meshArrayOfBreps = Mesh.CreateFromBrep(b, new MeshingParameters());
                 foreach (Mesh m in meshArrayOfBreps)
                 {
-                    m.VertexColors.CreateMonotoneMesh(Black_COLOR);
+                    m.VertexColors.CreateMonotoneMesh(Config.BLACK_COLOR);
                     listOfMeshes.Add(m);
                 }
             }
-            return listOfMeshes;
+            Mesh finalMesh = new Mesh();
+            foreach(Mesh m in listOfMeshes) { finalMesh.Append(m); }
+            return finalMesh;
         }
 
         public Mesh getTitleTextMesh(string text, Mesh inputMesh,
             double textHeight)
         {
-            //TODO: center point should be impacted by Z height parameter
-            Point3d center_point = new Point3d(0, 0, 0.001);
-            Point3d height_point = new Point3d(0, 0, 10);
-            //Constant? probably
-            Vector3d zaxis = height_point - center_point;
-
             //TODO make z depth adjustable
             DimensionStyle defaultDimensionStyle = new DimensionStyle();
             defaultDimensionStyle.TextHeight = textHeight;
@@ -279,23 +274,14 @@ namespace Helianthus
                 inputMesh.GetBoundingBox(true).Max.X -
                 inputMesh.GetBoundingBox(true).Min.X, 0);
 
-            List<Mesh> listMesh = createTextMesh(textEntityDliCount,
+            Mesh finalMesh = createTextMesh(textEntityDliCount,
                 defaultDimensionStyle);
-
-            Mesh finalMesh = new Mesh();
-            foreach(Mesh m in listMesh) { finalMesh.Append(m); }
             return finalMesh;
         }
 
-        public Mesh getTitleTextMeshByPosition(string text, Point3d startTextPoint,
-            double textHeight, double rectWidth)
+        public Mesh getTitleTextMeshByPosition(string text,
+            Point3d startTextPoint, double textHeight, double rectWidth)
         {
-            //TODO: center point should be impacted by Z height parameter
-            Point3d center_point = new Point3d(0, 0, 0.001);
-            Point3d height_point = new Point3d(0, 0, 10);
-            //Constant? probably
-            Vector3d zaxis = height_point - center_point;
-
             //TODO make z depth adjustable
             DimensionStyle defaultDimensionStyle = new DimensionStyle();
             defaultDimensionStyle.TextHeight = textHeight;
@@ -306,12 +292,65 @@ namespace Helianthus
             TextEntity textEntityDliCount = TextEntity.Create(text,
                 plane_cropDli, defaultDimensionStyle, true, rectWidth, 0);
 
-            List<Mesh> listMesh = createTextMesh(textEntityDliCount,
+            Mesh finalMesh = createTextMesh(textEntityDliCount,
                 defaultDimensionStyle);
-
-            Mesh finalMesh = new Mesh();
-            foreach (Mesh m in listMesh) { finalMesh.Append(m); }
             return finalMesh;
+        }
+
+        public Mesh createMeshFromPlane(Plane plane, double xStart, double xEnd,
+            double yStart, double yend)
+        {
+            Interval xTileInterval = new Interval(xStart, xEnd);
+            Interval yTileInterval = new Interval(yStart, yend);
+            Mesh mesh = Mesh.CreateFromPlane(plane, xTileInterval,
+                yTileInterval, 1, 1);
+            return mesh;
+        }
+
+        private Plane createPlaneFromCenterpoint(Point3d centerpoint)
+        {
+            return new Plane(centerpoint, zaxis);
+        }
+
+        public Color colorMeshByColorStepping(double colorValueMultiplier)
+        {
+            double colorIndTemp = step;
+            double p;
+            double red;
+            double green;
+            double blue;
+            Color minColor;
+            Color maxColor;
+            Color finalColor = new Color();
+            for (int colorIndCount = 0; colorIndCount < Config.DLI_COLOR_RANGE.Count; colorIndCount++)
+            {
+                if (colorValueMultiplier <= colorIndTemp ||
+                    (colorValueMultiplier == 1 &&
+                    colorIndCount == (Config.DLI_COLOR_RANGE.Count - 1)))
+                {
+                    if (colorIndCount > 0)
+                    {
+                        minColor = Config.DLI_COLOR_RANGE[colorIndCount - 1];
+                    }
+                    else
+                    {
+                        minColor = Config.DLI_COLOR_RANGE[colorIndCount];
+                    }
+
+                    maxColor = Config.DLI_COLOR_RANGE[colorIndCount];
+                    p = (colorValueMultiplier - (colorIndTemp - step)) /
+                        (colorIndTemp - (colorIndTemp - step));
+                    red = minColor.R * (1 - p) + maxColor.R * p;
+                    green = minColor.G * (1 - p) + maxColor.G * p;
+                    blue = minColor.B * (1 - p) + maxColor.B * p;
+                    finalColor = Color.FromArgb(255, Convert.ToInt32(red),
+                        Convert.ToInt32(green), Convert.ToInt32(blue));
+                    break;
+                }
+                colorIndTemp += step;
+            }
+
+            return finalColor;
         }
     }
 }

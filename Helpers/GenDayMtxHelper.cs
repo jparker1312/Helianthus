@@ -6,6 +6,7 @@ namespace Helianthus
 {
 	public class GenDayMtxHelper
 	{
+        //todo need to figure out how to make this editable. maybe just a parameter? how does ladybug do it?
         private string genDayMtxFilePath = "/Users/joel/Projects/Programming/AlbaThesis/GrasshopperTools/radiance/bin/gendaymtx";
         public static string gendaymtx_arg_direct = "-m 1 -d -A -h ";
         public static string gendaymtx_arg_diffuse = "-m 1 -s -A -h ";

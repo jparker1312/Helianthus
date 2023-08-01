@@ -130,7 +130,6 @@ namespace Helianthus
         //create the mesh and color
         double maxRadiation = finalRadiationList.Max();
         double minRadiation = finalRadiationList.Min();
-        //double diffRadiation = maxRadiation - minRadiation;
 
         List<Color> faceColors = meshHelper.getFaceColors(finalRadiationList,
             maxRadiation);

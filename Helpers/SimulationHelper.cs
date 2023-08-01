@@ -28,7 +28,6 @@ namespace Helianthus
             //results appends above values
             List<List<double>> finalIntersectionMatrix = new List<List<double>>();
             List<double> finalRadiationList = new List<double>();
-            DliHelper dliHelper = new DliHelper();
 
             for(int i = 0; i < intersectionObject.getIntersectionMatrix().Count; i++)
             {
@@ -49,7 +48,7 @@ namespace Helianthus
                 }
 
                 //convert to Dli
-                double dli = dliHelper.getDliFromX(radiationResult);
+                double dli = getDliFromX(radiationResult);
 
                 finalRadiationList.Add(dli);
             }
@@ -285,6 +284,27 @@ namespace Helianthus
 
             return intersectionObject; 
         }
-	}
+
+        public double getDliFromX(double surfaceSunlight)
+        {
+            //todo need to check this calculation for monthly...
+            //Convert Surface Sunlight constant units to DLI
+            //Divide by days in a year
+            double surfaceSunlightDLI = surfaceSunlight / 365;
+            //divide by the determined hours of sunlight. Should be the same as the input for the EPW duration
+            surfaceSunlightDLI = surfaceSunlightDLI / 12;
+            //multiply by 1000 to get the W/m2
+            surfaceSunlightDLI = surfaceSunlightDLI * 1000;
+            //divide by 2.02 to get the par
+            surfaceSunlightDLI = surfaceSunlightDLI * 2.02;
+            //multiply by .0864 to get the DLI
+            surfaceSunlightDLI = surfaceSunlightDLI * 0.0864;
+
+            //todo add back?
+            //surfaceSunlightDLI = Math.Round(surfaceSunlightDLI, 0);
+
+            return surfaceSunlightDLI;
+        }
+    }
 }
 

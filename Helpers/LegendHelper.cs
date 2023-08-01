@@ -12,7 +12,6 @@ namespace Helianthus
         private Point3d height_point;
         private Vector3d zaxis;
         private Plane baseBarGraphPlane;
-        private List<Color> colorRange;
         private double step;
 
         public LegendHelper()
@@ -21,18 +20,7 @@ namespace Helianthus
             height_point = new Point3d(0, 0, 10);
             zaxis = height_point - center_point;
             baseBarGraphPlane = new Plane(new Point3d(0, 0, 0.0001), zaxis);
-
-            colorRange = new List<Color>
-            {
-                Color.FromArgb(5, 7, 0),
-                Color.FromArgb(41, 66, 0),
-                Color.FromArgb(78, 125, 0),
-                Color.FromArgb(114, 184, 0),
-                Color.FromArgb(150, 243, 0),
-                Color.FromArgb(176, 255, 47),
-                Color.FromArgb(198, 255, 106)
-            };
-            step = 1.0 / colorRange.Count;
+            step = 1.0 / Config.DLI_COLOR_RANGE.Count;
         }
 
 		public Mesh createLegend(Mesh joinedMesh, bool isVerticalLegend)
@@ -112,22 +100,24 @@ namespace Helianthus
                 //get percentage of difference
                 double tempPercentage = faceRowCount / maxYVertices;
                 colorIndTemp = step;
-                for (int colorIndCount = 0; colorIndCount < colorRange.Count; colorIndCount++)
+                for (int colorIndCount = 0; colorIndCount <
+                    Config.DLI_COLOR_RANGE.Count; colorIndCount++)
                 {
                     if (tempPercentage <= colorIndTemp ||
-                            (tempPercentage == 1 && colorIndCount == (colorRange.Count - 1)))
+                            (tempPercentage == 1 && colorIndCount ==
+                            (Config.DLI_COLOR_RANGE.Count - 1)))
                     {
                         Color minColor;
                         if (colorIndCount > 0)
                         {
-                            minColor = colorRange[colorIndCount - 1];
+                            minColor = Config.DLI_COLOR_RANGE[colorIndCount - 1];
                         }
                         else
                         {
-                            minColor = colorRange[colorIndCount];
+                            minColor = Config.DLI_COLOR_RANGE[colorIndCount];
                         }
 
-                        Color maxColor = colorRange[colorIndCount];
+                        Color maxColor = Config.DLI_COLOR_RANGE[colorIndCount];
                         double p = (tempPercentage - (colorIndTemp - step)) / (colorIndTemp - (colorIndTemp - step));
                         double red = minColor.R * (1 - p) + maxColor.R * p;
                         double green = minColor.G * (1 - p) + maxColor.G * p;
@@ -176,12 +166,9 @@ namespace Helianthus
             TextEntity textEntityCropName = TextEntity.Create(text, plane_crop,
                 defaultDimensionStyle, true, 10, 0);
 
-            List<Mesh> textMeshes = Helper.createTextMesh(textEntityCropName,
+            MeshHelper meshHelper = new MeshHelper();
+            Mesh finalTextMesh = meshHelper.createTextMesh(textEntityCropName,
                 defaultDimensionStyle);
-
-            Mesh finalTextMesh = new Mesh();
-            foreach(Mesh m in textMeshes) { finalTextMesh.Append(m); }
-
             return finalTextMesh;
         }
 	}
