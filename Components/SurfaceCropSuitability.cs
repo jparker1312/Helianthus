@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
 
+using Grasshopper;
 using Grasshopper.Kernel;
 using Rhino.Geometry;
 
@@ -13,7 +14,8 @@ namespace Helianthus
   {
     enum Months  
     {  
-        January, February, March, April, May, June, July, August, September, October, November, December  
+        January, February, March, April, May, June, July, August, September,
+        October, November, December  
     };
 
     private MeshHelper meshHelper;
@@ -28,8 +30,8 @@ namespace Helianthus
     public SurfaceCropSuitability()
       : base("Surface_Crop_Suitability",
              "Surface Crop Suitability",
-             "Returns a monthly analysis of a surface and recommends suitable " +
-             "crops to grow",
+             "Returns a monthly analysis of a surface and recommends " +
+             "suitable crops to grow",
              "Helianthus",
              "02 | Analyze Data")
     {
@@ -75,17 +77,17 @@ namespace Helianthus
     {
         pManager.AddTextParameter("Out", "Out", "Input Parameters",
             GH_ParamAccess.list);
-        pManager.AddGenericParameter("Radiation_List_By_Month",
+        pManager.AddNumberParameter("Radiation_List_By_Month",
             "Radiation List By Month", "Radiation List By Month",
-            GH_ParamAccess.list);
-        pManager.AddGenericParameter("Crop_Recommendations_By_Month",
+            GH_ParamAccess.tree);
+        pManager.AddTextParameter("Crop_Recommendations_By_Month",
             "Crop Recommendations By Month", "Crop Recommendations By Month",
-            GH_ParamAccess.list);
-        pManager.AddMeshParameter("Mesh", "Mesh", "Mesh viz",
-            GH_ParamAccess.list);
-        pManager.AddMeshParameter("Other_Mesh", "Other Mesh", "Mesh viz",
-            GH_ParamAccess.list);
-        }
+            GH_ParamAccess.tree);
+        pManager.AddGenericParameter("Crop_Surface_Object",
+            "Crop Surface Object", "Crop Surface Object", GH_ParamAccess.item);
+        pManager.AddMeshParameter("Mesh",
+            "Mesh", "Mesh", GH_ParamAccess.list);
+    }
 
     /// <summary>
     /// This is the method that actually does the work.
@@ -135,27 +137,26 @@ namespace Helianthus
         List<string> directRadiationRGBList =
                 genDayMtxHelper.runMonthlyGenDayMtxSimulations(
                     pathname_MonthlyWeaFiles,
-                    GenDayMtxHelper.gendaymtx_arg_direct,
-                    simulation_monthRange);
+                    simulation_monthRange, true);
         List<string> diffuseRadiationRGBList =
                 genDayMtxHelper.runMonthlyGenDayMtxSimulations(
                     pathname_MonthlyWeaFiles,
-                    GenDayMtxHelper.gendaymtx_arg_diffuse,
-                    simulation_monthRange);
+                    simulation_monthRange, false);
 
+        SimulationHelper simulationHelper = new SimulationHelper();
         List<List<double>> monthlyDirectRadiationList = new List<List<double>>();
         List<List<double>> monthlyDiffuseRadiationList = new List<List<double>>();
         List<double> directRadiationList = new List<double>();
         List<double> diffuseRadiationList = new List<double>();
         foreach(string monthRGB in directRadiationRGBList)
         {
-            directRadiationList = genDayMtxHelper.convertRgbRadiationList(
+            directRadiationList = simulationHelper.convertRgbRadiationList(
                 monthRGB);
             monthlyDirectRadiationList.Add(directRadiationList);
         }
         foreach(string monthRGB in diffuseRadiationRGBList)
         {
-            diffuseRadiationList = genDayMtxHelper.convertRgbRadiationList(
+            diffuseRadiationList = simulationHelper.convertRgbRadiationList(
                 monthRGB);
             monthlyDiffuseRadiationList.Add(diffuseRadiationList);
         }
@@ -208,7 +209,6 @@ namespace Helianthus
         }
 
         //Note: these calls should be the same for all monthly meshes
-        SimulationHelper simulationHelper = new SimulationHelper();
         Mesh joinedMesh = simulationHelper.createJoinedMesh(geometryInput);
         List<Point3d> points = simulationHelper.getMeshJoinedPoints(joinedMesh);
         //todo duplicate in Mesh helper
@@ -224,7 +224,7 @@ namespace Helianthus
             contextMesh, points, allVectors, joinedMesh.FaceNormals);
 
         List<Mesh> finalMeshList = new List<Mesh>();
-        List<Mesh> otherMeshList = new List<Mesh>();
+        List<Mesh> tiledMeshList = new List<Mesh>();
         Mesh finalMesh = meshHelper.createFinalMesh(joinedMesh);
 
         //todo maybe remove this
@@ -251,7 +251,13 @@ namespace Helianthus
         //todo variable for previous bounding box if there is one
         double previousX = 0;
 
-        //start of specific monthly calls
+            //start of specific monthly calls
+
+
+        DataTree<string> monthlyCropsThatFitRangeString = new DataTree<string>();
+        DataTree<double> dataTreeRadiation = new DataTree<double>();
+
+        List<double[]> totalRadiationListByMonthArray = new List<double[]>();
         List<List<CropDataObject>> finalMonthlyCropList = new List<List<CropDataObject>>();
         int monthCount = 0;
         foreach(List<double> radiationList in totalRadiationListByMonth)
@@ -261,11 +267,16 @@ namespace Helianthus
                 simulationHelper.computeFinalRadiationList(
                     intersectionObject, radiationList);
 
+            Grasshopper.Kernel.Data.GH_Path path = new Grasshopper.Kernel.Data.GH_Path(monthCount + 1);
+            //path.AppendElement(monthCount);
+
+            dataTreeRadiation.AddRange(finalRadiationList, path);
+            //path.Increment(0);
+
             //create the mesh and color
             //todo put this inside getFaceColors
             double maxRadiation = finalRadiationList.Max();
             double minRadiation = finalRadiationList.Min();
-            //double diffRadiation = maxRadiation - minRadiation;
 
             List<Color> faceColors = meshHelper.getFaceColors(
                 finalRadiationList, overallMaxRadiation);
@@ -297,9 +308,12 @@ namespace Helianthus
             translateVector.X = translateVector.X + xIncrement;
             monthlyFinalMesh.Translate(translateVector);
 
+            //todo should i do this here?
+            tiledMeshList.Add(monthlyFinalMesh.DuplicateMesh());
+
             //add section header for tiled surface
             Mesh surfaceDliTitleMesh = meshHelper.getTitleTextMesh(
-                "Surface DLI", monthlyFinalMesh, 1);
+                "Surface DLI", monthlyFinalMesh, 1, 4);
 
             //add horizontal legend
             LegendHelper legendHelper = new LegendHelper();
@@ -389,16 +403,19 @@ namespace Helianthus
             //add month name
             //todo change width calculation
             Mesh monthTitleMesh = meshHelper.getTitleTextMesh(
-                Convert.ToString((Months)monthCount), monthlyFinalMesh, 2);
-
+                Convert.ToString((Months)monthCount), monthlyFinalMesh, 2, 4);
             monthlyFinalMesh.Append(monthTitleMesh);
-            finalMeshList.Add(monthlyFinalMesh);
 
             //add bg plane
             Mesh meshBase2dPlane = meshHelper.create2dBaseMesh(monthlyFinalMesh);
-            otherMeshList.Add(meshBase2dPlane);
+            monthlyFinalMesh.Append(meshBase2dPlane);
+            //otherMeshList.Add(meshBase2dPlane);
             previousX = meshBase2dPlane.GetBoundingBox(true).Max.X -
                     meshBase2dPlane.GetBoundingBox(true).Min.X;
+
+            //todo can just return mesh instead of list?? not sure i want to
+            finalMeshList.Add(monthlyFinalMesh);
+
 
             List<CropDataObject> monthlyCropsThatFitRange = new List<CropDataObject>();
             //todo change this. make this the string below. do this before bar graph call
@@ -408,21 +425,28 @@ namespace Helianthus
                 if (crop.getDli() < maxRadiation)
                 {
                     monthlyCropsThatFitRange.Add(crop);
+                    monthlyCropsThatFitRangeString.Add(crop.getSpecie(), path);
                 }
             }
             finalMonthlyCropList.Add(monthlyCropsThatFitRange); 
             monthCount++;
         }
 
+        CropSurfaceObject cropSurfaceObject = new CropSurfaceObject(
+            finalMeshList, cropDataInput);
+
         //todo output input parameters
         DA.SetDataList(0, totalRadiationListByMonth);
-        //todo radiation list is not correct
-        DA.SetDataList(1, totalRadiationListByMonth);
-        //todo fix out of crop recommended list
-        DA.SetDataList(2, finalMonthlyCropList);
-        DA.SetDataList(3, finalMeshList);
-        DA.SetDataList(4, otherMeshList);
-    }
+        DA.SetDataTree(1, dataTreeRadiation);
+        DA.SetDataTree(2, monthlyCropsThatFitRangeString);
+        DA.SetData(3, cropSurfaceObject);
+
+        //DataTree<CropDataObject> dt = new DataTree<CropDataObject>();
+        //    dt.Branch().Add(cropDataInput[0]);
+
+        //CropSurfaceObject cropSurfaceObject = new CropSurfaceObject(tiledMeshList, cropDataInput);
+        DA.SetDataList(4, finalMeshList);
+        }
 
     /// <summary>
     /// Provides an Icon for every component that will be visible in the User Interface.

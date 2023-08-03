@@ -134,13 +134,13 @@ namespace Helianthus
             double tilePos_x_start, double tilePos_x_end)
         {
             bool greaterThanMax = false;
-            bool lessThanPadding = false;
+            //bool lessThanPadding = false;
             //check if crop dli fits recommended crops
             if (crop.getDli() > maxDli)
             {
                 greaterThanMax = true;
                 //todo value of 4 can change depending on light research
-                if (crop.getDli() < maxDli + 4) { lessThanPadding = true; }
+                //if (crop.getDli() < maxDli + 4) { lessThanPadding = true; }
             }
 
             //add new tile for each dli value.
@@ -159,23 +159,23 @@ namespace Helianthus
 
                 if (greaterThanMax)
                 {
-                    if (lessThanPadding)
-                    {
-                        mesh.VertexColors.CreateMonotoneMesh(
-                            Config.WHITE_COLOR);
-                    }
-                    else
-                    {
+                    //if (lessThanPadding)
+                    //{
+                    //    mesh.VertexColors.CreateMonotoneMesh(
+                    //        Config.WHITE_COLOR);
+                    //}
+                    //else
+                    //{
                         mesh.VertexColors.CreateMonotoneMesh(
                             Config.GRAY_GREEN_COLOR);
-                    }
+                    //}
                 }
                 else
                 {
                     //determine the color value based on relation to overall max dli
                     double colorValueMultiplier = Convert.ToDouble(
                         crop.getDli()) / overallMaxDli;
-                    Color meshColor = meshHelper.colorMeshByColorStepping(colorValueMultiplier);
+                    Color meshColor = meshHelper.colorMeshByColorStepping(colorValueMultiplier, Config.DLI_COLOR_RANGE);
                     mesh.VertexColors.CreateMonotoneMesh(meshColor);
                 }
                 finalMesh.Append(mesh);
@@ -239,6 +239,192 @@ namespace Helianthus
                 Plane plane_cropDli = new Plane(center_point_crop, zaxis);
 
                 TextEntity textEntityDliCount = TextEntity.Create(dliCount.ToString(),
+                    plane_cropDli, defaultDimensionStyle, true, yAxisPanelWidth, 0);
+
+                finalMesh.Append(meshHelper.createTextMesh(textEntityDliCount, defaultDimensionStyle));
+            }
+
+            return finalMesh;
+        }
+
+        public Mesh createBarGraphYield(Mesh meshInput,
+            List<CropDataObject> cropDataInput, List<string> selectedCrops,
+            double maxOverallYield)
+        {
+            //maxDli = Math.Round(maxDli, 0, MidpointRounding.AwayFromZero);
+            //overallMaxDli = Math.Round(overallMaxDli, 0,
+            //    MidpointRounding.AwayFromZero);
+
+            Mesh finalMesh = new Mesh();
+            //Get the bar graph visualization start points,
+            //Do this before we scale the bounding box
+            Point3d minBoundingBoxGeometry = meshInput.GetBoundingBox(true).Min;
+            Point3d maxBoundingBoxGeometry = meshInput.GetBoundingBox(true).Max;
+            double barGraphXStartPoint = minBoundingBoxGeometry.X;
+            double barGraphYStartPoint = minBoundingBoxGeometry.Y;
+
+            //scale the bounding box based on input
+            //todo need to think about scale
+            //maxBoundingBoxGeometry = Point3d.Multiply(maxBoundingBoxGeometry,
+            //    legendData.getGraphScale());
+
+            //10% of the bounding box. Reserve for the X axis key information
+            double boundingBoxHeight = (maxBoundingBoxGeometry.Y -
+                minBoundingBoxGeometry.Y) /2;
+            double xAxisPanelHeight = boundingBoxHeight * .1;
+            //Get the remaining Y axis length
+            //todo maybe change this?....
+            double barGraphPanelHeight = boundingBoxHeight - xAxisPanelHeight;
+
+
+            //chnage this
+            //calculate yAxisPanel
+            double boundingBoxWidth = (maxBoundingBoxGeometry.X -
+                minBoundingBoxGeometry.X);
+
+            //can double as yAxisPanelWidth
+            double columnWidth = boundingBoxWidth * (1 / Convert.ToDouble(cropDataInput.Count + 1));
+            //double yAxisPanelWidth = boundingBoxWidth * (1/cropDataInput.Count + 7);
+
+            //calculate tile size. 32 is the current max DLI. 1/32 == .03125
+            double barGraphTileHeight = barGraphPanelHeight * .03125;
+            //spacer using 10% of tile size currently
+            double tileSpacerSize = barGraphTileHeight * .1;
+            barGraphTileHeight -= tileSpacerSize;
+
+
+            //x axis tile size is double to y axis (specific to our graph)
+            double barGraphTileWidth = columnWidth - tileSpacerSize;
+
+
+            double finalYStartPoint = barGraphYStartPoint -
+                boundingBoxHeight - 1;
+
+            double yPanelStartPos = 0;
+            int cropCount = 0;
+            //loop through each crop, list name, create bar graph tiles
+            foreach (CropDataObject crop in cropDataInput)
+            {
+                //list the crop names along the X Axis
+                //Divide tile length by 2 in order to place text with middle
+                //indentation
+                //todo maybe put in a function
+                Point3d center_point_crops = new Point3d((cropCount *
+                    (barGraphTileWidth + tileSpacerSize)) +
+                    barGraphXStartPoint + (barGraphTileWidth / 2),
+                    finalYStartPoint, 0.001);
+                Plane plane_crop = new Plane(center_point_crops, zaxis);
+                plane_crop.Rotate(1.5708, zaxis);
+
+                TextEntity textEntityCropName = TextEntity.Create(
+                    crop.getSpecie(), plane_crop, defaultDimensionStyle, true,
+                    xAxisPanelHeight, 0);
+                finalMesh.Append(meshHelper.createTextMesh(textEntityCropName,
+                    defaultDimensionStyle));
+
+                //create bar graph tiles
+                //calculate new X Interval positions for set of tiles
+                double tilePos_x_start = barGraphXStartPoint + ((cropCount) *
+                        (barGraphTileWidth + tileSpacerSize));
+                double tilePos_x_end = tilePos_x_start + barGraphTileWidth;
+
+                Mesh barGraphTiles = createBarGraphTilesYield(crop,
+                    selectedCrops, maxOverallYield, xAxisPanelHeight, finalYStartPoint,
+                    barGraphTileHeight, tileSpacerSize, tilePos_x_start,
+                    tilePos_x_end);
+                finalMesh.Append(barGraphTiles);
+
+                yPanelStartPos = tilePos_x_end + tileSpacerSize;
+                cropCount++;
+            }
+
+            //create legend for recommended crops
+            //Mesh legendMeshes = createLegendForRecommendedCrops(
+            //    barGraphXStartPoint, finalYStartPoint, barGraphPanelHeight,
+            //    barGraphTileWidth, barGraphTileHeight, tileSpacerSize);
+            //finalMesh.Append(legendMeshes);
+
+            //int cropMaxDli = 0;
+            //foreach (CropDataObject crop in cropDataInput)
+            //{
+            //    if (crop.getCropYield() > cropMaxDli) { cropMaxDli = crop.getDli(); }
+            //}
+
+            //YAxis DLI Panel
+            Mesh yPanelList = createBarGraphYAxisPanelYield(maxOverallYield,
+                yPanelStartPos, xAxisPanelHeight, barGraphTileHeight,
+                tileSpacerSize, finalYStartPoint, columnWidth);
+            finalMesh.Append(yPanelList);
+
+            return finalMesh;
+        }
+
+        private Mesh createBarGraphTilesYield(CropDataObject crop,
+            List<string> cropNames, double overallMaxYield,
+            double xAxisPanelHeight, double finalYStartPoint,
+            double barGraphTileHeight, double tileSpacerSize,
+            double tilePos_x_start, double tilePos_x_end)
+        {
+            //add new tile for each dli value.
+            Mesh finalMesh = new Mesh();
+
+            bool selected = false;
+            foreach(string cropName in cropNames)
+            {
+                if (crop.getSpecie().Equals(cropName))
+                {
+                    selected = true;
+                    break;
+                }
+            }
+            
+            for (int yieldCount = 0; yieldCount <= crop.getMonthlyCropYield(); yieldCount ++)
+            {
+                //calculate Y Interval positions for this tile
+                double tilePos_y_start = finalYStartPoint +
+                    xAxisPanelHeight + (yieldCount *
+                    (barGraphTileHeight + tileSpacerSize));
+                double tilePos_y_end = tilePos_y_start + barGraphTileHeight;
+
+                Mesh mesh = meshHelper.createMeshFromPlane(defaultPlane,
+                    tilePos_x_start, tilePos_x_end,
+                    tilePos_y_start, tilePos_y_end);
+
+                if(!selected)
+                {
+                    mesh.VertexColors.CreateMonotoneMesh(
+                        Config.GRAY_GREEN_COLOR);
+                }
+                else
+                {
+                    //determine the color value based on relation to overall max dli
+                    double colorValueMultiplier = Convert.ToDouble(
+                        crop.getMonthlyCropYield()) / overallMaxYield;
+                    Color meshColor = meshHelper.colorMeshByColorStepping(colorValueMultiplier, Config.YIELD_COLOR_RANGE);
+                    mesh.VertexColors.CreateMonotoneMesh(meshColor);
+                }
+                finalMesh.Append(mesh);
+            }
+
+            return finalMesh;
+        }
+
+        private Mesh createBarGraphYAxisPanelYield(double overallMaxYield,
+            double yPanelStartPos, double xAxisPanelHeight,
+            double barGraphTileHeight, double tileSpacerSize,
+            double finalYStartPoint, double yAxisPanelWidth)
+        {
+            Mesh finalMesh = new Mesh();
+            for (int yieldCount = 0; yieldCount <= overallMaxYield; yieldCount ++)
+            {
+                //Calculate the YAxis panel Y position using the current DLI count
+                // and taking consideration of the yOffset input parameter
+                //TODO make z depth adjustable
+                Point3d center_point_crop = new Point3d(yPanelStartPos, xAxisPanelHeight +
+                    (yieldCount * (barGraphTileHeight + tileSpacerSize)) + finalYStartPoint, 0.001);
+                Plane plane_cropDli = new Plane(center_point_crop, zaxis);
+
+                TextEntity textEntityDliCount = TextEntity.Create(yieldCount.ToString(),
                     plane_cropDli, defaultDimensionStyle, true, yAxisPanelWidth, 0);
 
                 finalMesh.Append(meshHelper.createTextMesh(textEntityDliCount, defaultDimensionStyle));

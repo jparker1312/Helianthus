@@ -62,16 +62,18 @@ namespace Helianthus
             return points;
         }
 
-        public Mesh getContextMesh(List<Brep> geometryInput, List<Brep> contextGeometryInput)
+        public Mesh getContextMesh(List<Brep> geometryInput,
+            List<Brep> contextGeometryInput)
         {
-            foreach (Brep b in geometryInput) { contextGeometryInput.Append(b); }
-
             Brep mergedContextGeometry = new Brep();
+            foreach (Brep b in geometryInput)
+            {
+                mergedContextGeometry.Append(b);
+            }
             foreach (Brep b in contextGeometryInput)
             {
                 mergedContextGeometry.Append(b);
             }
-
             Mesh[] contextMeshArray = Mesh.CreateFromBrep(
                 mergedContextGeometry, new MeshingParameters());
             Mesh contextMesh = new Mesh();
@@ -258,7 +260,7 @@ namespace Helianthus
         }
 
         public Mesh getTitleTextMesh(string text, Mesh inputMesh,
-            double textHeight)
+            double textHeight, double offsetY)
         {
             //TODO make z depth adjustable
             DimensionStyle defaultDimensionStyle = new DimensionStyle();
@@ -266,7 +268,7 @@ namespace Helianthus
 
             Point3d center_point_crop = new Point3d(
                 inputMesh.GetBoundingBox(true).Min.X,
-                inputMesh.GetBoundingBox(true).Max.Y + 5, 0.001);
+                inputMesh.GetBoundingBox(true).Max.Y + offsetY, 0.001);
             Plane plane_cropDli = new Plane(center_point_crop, zaxis);
 
             TextEntity textEntityDliCount = TextEntity.Create(text,
@@ -312,7 +314,7 @@ namespace Helianthus
             return new Plane(centerpoint, zaxis);
         }
 
-        public Color colorMeshByColorStepping(double colorValueMultiplier)
+        public Color colorMeshByColorStepping(double colorValueMultiplier, List<Color> colorRange)
         {
             double colorIndTemp = step;
             double p;
@@ -322,22 +324,22 @@ namespace Helianthus
             Color minColor;
             Color maxColor;
             Color finalColor = new Color();
-            for (int colorIndCount = 0; colorIndCount < Config.DLI_COLOR_RANGE.Count; colorIndCount++)
+            for (int colorIndCount = 0; colorIndCount < colorRange.Count; colorIndCount++)
             {
                 if (colorValueMultiplier <= colorIndTemp ||
                     (colorValueMultiplier == 1 &&
-                    colorIndCount == (Config.DLI_COLOR_RANGE.Count - 1)))
+                    colorIndCount == (colorRange.Count - 1)))
                 {
                     if (colorIndCount > 0)
                     {
-                        minColor = Config.DLI_COLOR_RANGE[colorIndCount - 1];
+                        minColor = colorRange[colorIndCount - 1];
                     }
                     else
                     {
-                        minColor = Config.DLI_COLOR_RANGE[colorIndCount];
+                        minColor = colorRange[colorIndCount];
                     }
 
-                    maxColor = Config.DLI_COLOR_RANGE[colorIndCount];
+                    maxColor = colorRange[colorIndCount];
                     p = (colorValueMultiplier - (colorIndTemp - step)) /
                         (colorIndTemp - (colorIndTemp - step));
                     red = minColor.R * (1 - p) + maxColor.R * p;

@@ -9,23 +9,50 @@ namespace Helianthus
 {
 	public class SimulationHelper
 	{
-        public static int[] TREGENZA_PATCHES_PER_ROW = { 30, 30, 24, 24, 18, 12, 6, 1 };
-        public static double[] TREGENZA_COEFFICIENTS = {
+        private static int[] TREGENZA_PATCHES_PER_ROW = { 30, 30, 24, 24, 18, 12, 6, 1 };
+        private static double[] TREGENZA_COEFFICIENTS = {
             0.0435449227, 0.0416418006, 0.0473984151, 0.0406730411,
             0.0428934136, 0.0445221864, 0.0455168385, 0.0344199465 };
 		public SimulationHelper()
 		{
 		}
 
+        //takes output from gendaymtx and converts to kWh/m2
+        public List<double> convertRgbRadiationList(string radiationString)
+        {
+            List<double> radiationList = new List<double>();
+            string[] radiationRGB = radiationString.Split(
+                new string[] { "\r\n", "\r", "\n" },
+                StringSplitOptions.None
+            );
+
+            double wea_duration = 8760;
+            int rowCounter = 1;
+            for (int rowOfPatches_count = 0; rowOfPatches_count < TREGENZA_PATCHES_PER_ROW.Length; rowOfPatches_count++)
+            {
+                var currentRowofPatches = new ArraySegment<string>(radiationRGB, rowCounter, TREGENZA_PATCHES_PER_ROW[rowOfPatches_count]);
+                foreach (string dr in currentRowofPatches)
+                {
+                    string[] rgb = dr.Split(' ');
+                    double rgbWeightedValue =
+                        0.265074126 * Convert.ToDouble(rgb[0]) +
+                        0.670114631 * Convert.ToDouble(rgb[1]) +
+                        0.064811243 * Convert.ToDouble(rgb[2]);
+                    rgbWeightedValue = rgbWeightedValue *
+                        TREGENZA_COEFFICIENTS[rowOfPatches_count] *
+                        wea_duration / 1000;
+
+                    radiationList.Add(rgbWeightedValue);
+                }
+                rowCounter += TREGENZA_PATCHES_PER_ROW[rowOfPatches_count];
+            }
+            return radiationList;
+        }
+
         public List<double> computeFinalRadiationList(
             IntersectionObject intersectionObject,
             List<double> totalRadiationList)
         {
-            //compute the results
-            //pt_rel = array of ival(0 or 1) * cos(ang)
-            //int_matrix appends above value (0 or cos(ang)
-            //rad_result = sum of (pt_rel[](cos of an angle) * all_rad[](dir and diff combined)) ...what is the size of this array? think just 1 number. same size as matrix
-            //results appends above values
             List<List<double>> finalIntersectionMatrix = new List<List<double>>();
             List<double> finalRadiationList = new List<double>();
 
@@ -49,10 +76,8 @@ namespace Helianthus
 
                 //convert to Dli
                 double dli = getDliFromX(radiationResult);
-
                 finalRadiationList.Add(dli);
             }
-
             return finalRadiationList;
         }
 

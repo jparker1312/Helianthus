@@ -1,5 +1,4 @@
 ﻿using System;
-using System.IO;
 
 namespace Helianthus
 {
@@ -10,11 +9,13 @@ namespace Helianthus
 		private string specie;
 		private string scientific_name;
 		private int dli;
-		private int crop_yield; //per sq/m?
-		//private string crop_dimensions;
-		//private string crop_visualization;
+        private int dli_group_classification;
+        private int yearly_crop_yield;
+        private double monthly_crop_yield;
+        //private string crop_dimensions;
+        //private string crop_visualization;
 
-		public CropDataObject()
+        public CropDataObject()
 		{
 		}
 
@@ -27,7 +28,10 @@ namespace Helianthus
 			cropDataObject.specie = values[2];
             cropDataObject.scientific_name = values[3];
             cropDataObject.dli = Convert.ToInt32(values[4]);
-            cropDataObject.crop_yield = Convert.ToInt32(values[5]);
+            cropDataObject.dli_group_classification = Convert.ToInt32(values[5]);
+            cropDataObject.yearly_crop_yield = Convert.ToInt32(values[6]);
+            cropDataObject.monthly_crop_yield = Convert.ToDouble(values[7]);
+
             //cropDataObject.crop_dimensions = values[7];
             //cropDataObject.crop_visualization = values[8];
             return cropDataObject;
@@ -43,10 +47,14 @@ namespace Helianthus
             return this.specie;
         }
 
-		public int getCropYield()
+		public int getYearlyCropYield()
 		{
-			return this.crop_yield;
+			return this.yearly_crop_yield;
 		}
+
+        public double getMonthlyCropYield()
+        {
+            return this.monthly_crop_yield;
+        }
     }
 }
-

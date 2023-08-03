@@ -99,10 +99,10 @@ namespace Helianthus
         double barGraphPanelHeight = maxBoundingBoxGeometry.Y - xAxisPanelHeight;
 
         //loop through crop data to get Max DLI value
-        int cropMaxYield = 0;
+        double cropMaxYield = 0;
         foreach (CropDataObject crop in cropDataInput)
         {
-            if (crop.getCropYield() > cropMaxYield) { cropMaxYield = crop.getCropYield(); }
+            if (crop.getMonthlyCropYield() > cropMaxYield) { cropMaxYield = crop.getMonthlyCropYield(); }
         }
         // TODO: calculate tile size. 32 is the current max DLI. 1/32 == .03125 / this needs to change to something less static
         //use the max yeild or dli?
@@ -160,7 +160,7 @@ namespace Helianthus
                     (barGraphTileWidth + tileSpacerSize));
             double tilePos_x_end = tilePos_x_start + barGraphTileWidth;
             //add new tile for each yield value.
-            for (int yieldCount = 1; yieldCount <= crop.getCropYield(); yieldCount++)
+            for (int yieldCount = 1; yieldCount <= crop.getMonthlyCropYield(); yieldCount++)
             {
                 //calculate Y Interval positions for this tile
                 double tilePos_y_start = barGraphYStartPoint + xAxisPanelHeight +
@@ -173,7 +173,7 @@ namespace Helianthus
 
                 //maxColor will be max yield
                 //determine the color value based on relation to max yield
-                double colorValueMultiplier = Convert.ToDouble(crop.getCropYield())/
+                double colorValueMultiplier = Convert.ToDouble(crop.getMonthlyCropYield())/
                         Convert.ToDouble(cropMaxYield);
 
                 //based off of colors from graph but could be any values.

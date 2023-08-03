@@ -3,6 +3,7 @@ using System.Collections.Generic;
 
 using Grasshopper;
 using Grasshopper.Kernel;
+using Grasshopper.Kernel.Types;
 using Rhino.Geometry;
 
 namespace Helianthus.Components
@@ -30,22 +31,19 @@ namespace Helianthus.Components
     /// </summary>
     protected override void RegisterInputParams(GH_Component.GH_InputParamManager pManager)
     {
-        pManager.AddMeshParameter(
-            "Surface_Mesh_List",
-            "Surface Mesh List",
-            "Surface Mesh List",
-            GH_ParamAccess.list);
         pManager.AddGenericParameter(
-            "Crops_For_Yield_Projections",
-            "Crops For Yield Projections",
-            "List of Crops that you want to visualize",
-            GH_ParamAccess.list);
-        pManager.AddNumberParameter(
-            "Radiation_List_By_Month",
-            "Radiation List By Month",
-            "Radiation List By Month",
-            GH_ParamAccess.list);
-    }
+            "Crop_Surface_Object",
+            "Crop Surface Object",
+            "Crop Surface Object",
+            GH_ParamAccess.item);
+        pManager.AddTextParameter(
+            "Crop_Projections",
+            "Crop Projections",
+            "Crop Projections",
+            GH_ParamAccess.tree);
+        pManager.AddBooleanParameter("Run_Simulation", "Run Simulation",
+            "Run Simulation", GH_ParamAccess.item);
+        }
 
 
     /// <summary>
@@ -53,6 +51,10 @@ namespace Helianthus.Components
     /// </summary>
     protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
     {
+        pManager.AddTextParameter("Out", "Out", "Input Parameters",
+            GH_ParamAccess.list);
+        pManager.AddMeshParameter("Mesh", "Mesh", "Mesh viz",
+            GH_ParamAccess.list);
     }
 
     /// <summary>
@@ -63,12 +65,81 @@ namespace Helianthus.Components
     protected override void SolveInstance(IGH_DataAccess DA)
     {
         //todo get params
+        //List<Mesh> meshInput = new List<Mesh>();
+        //CropSurfaceObject cropSurfaceObject = new CropSurfaceObject();
 
-        //todo cycle through tiled meshes and assign a crop to each face according to DLI
+        CropSurfaceObject cropSurfaceObject = new CropSurfaceObject();
+        Grasshopper.Kernel.Data.GH_Structure<GH_String> cropDataInput = new Grasshopper.Kernel.Data.GH_Structure<GH_String>();
+        bool run_Simulation = false;
 
-        //todo cycle through the new value list to calculate the total yield per month for each crop
+        //if (!DA.GetData(0, ref cropSurfaceObject)) { return; }
+        if (!DA.GetData(0, ref cropSurfaceObject)) { return; }
+        if (!DA.GetDataTree(1, out cropDataInput)) { return; }
+        if (!DA.GetData(2, ref run_Simulation)) { return; }
+
+        if (!run_Simulation){ return; }
+
+        //todo cycle through tiled meshes and assign a crop to each face according to DLI: not needed currently
+        //todo cycle through the new value list to calculate the total yield per month for each crop: not needed currently
+
+        //todo create bar graph of yields highlighting the selected crops for each month
+
+        List<List<string>> selectedCropsByMonth = new List<List<string>>();
+        for(int monthCount =0; monthCount < cropDataInput.Branches.Count; monthCount++)
+        {
+            List<string> cropNames = new List<string>();
+            foreach (GH_String cropName in cropDataInput.Branches[monthCount])
+            {
+                cropNames.Add(cropName.ToString());
+            }
+            selectedCropsByMonth.Add(cropNames);
+        }
+
+
+        //todo need prior meshes for alignment
+        //todo need full crop list. can get this from same object
+        //todo overall max radiation will be result of full crop list
+
+        int maxOverallYield = 0;
+        foreach (CropDataObject cropDataObject in cropSurfaceObject.getCropDataObjectList())
+        {
+            if(cropDataObject.getMonthlyCropYield() > maxOverallYield)
+            {
+                maxOverallYield = Convert.ToInt32(cropDataObject.getMonthlyCropYield());
+            }
+        }
+
+        List<Mesh> finalMeshList = new List<Mesh>();
+        BarGraphHelper barGraphHelper = new BarGraphHelper();
+        MeshHelper meshHelper = new MeshHelper();
+        int monthlyCount = 0;
+        foreach(Mesh monthlyMesh in cropSurfaceObject.getTiledMeshList())
+        {
+            Mesh barGraphMesh = barGraphHelper.createBarGraphYield(
+                monthlyMesh, cropSurfaceObject.getCropDataObjectList(),
+                selectedCropsByMonth[monthlyCount], maxOverallYield);
+
+            Mesh yieldTitleText = meshHelper.getTitleTextMesh(
+                "Yield Projections", barGraphMesh, 1, 2);
+                barGraphMesh.Append(yieldTitleText);
+
+            //add bg plane
+            Mesh meshBase2dPlane = meshHelper.create2dBaseMesh(barGraphMesh);
+            barGraphMesh.Append(meshBase2dPlane);
+
+            finalMeshList.Add(barGraphMesh);
+            monthlyCount++;
+        }
+
+        finalMeshList.AddRange(cropSurfaceObject.getTiledMeshList());
+
+
+        //previousX = meshBase2dPlane.GetBoundingBox(true).Max.X -
+        //        meshBase2dPlane.GetBoundingBox(true).Min.X;
 
         //todo some output tbd
+        DA.SetDataList(0, cropDataInput);
+        DA.SetDataList(1, finalMeshList);
     }
 
     /// <summary>

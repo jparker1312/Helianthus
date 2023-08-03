@@ -10,6 +10,9 @@ namespace Helianthus
 {
   public class SiteSuitability : GH_Component
   {
+    private MeshHelper meshHelper;
+    private SimulationHelper simulationHelper;
+
     /// <summary>
     /// Each implementation of GH_Component must provide a public 
     /// constructor without any arguments.
@@ -25,12 +28,14 @@ namespace Helianthus
              "Helianthus",
              "02 | Analyze Data")
     {
+        meshHelper = new MeshHelper();
+        simulationHelper = new SimulationHelper();
     }
 
     /// <summary>
     /// Registers all the input parameters for this component.
     /// </summary>
-    protected override void RegisterInputParams(GH_Component.GH_InputParamManager pManager)
+    protected override void RegisterInputParams(GH_InputParamManager pManager)
     {
         pManager.AddGenericParameter("WEA_File", "WEA File",
         "File location for .wea file", GH_ParamAccess.item);
@@ -38,9 +43,10 @@ namespace Helianthus
             "Rhino Surfaces or Rhino Meshes", GH_ParamAccess.list);
         pManager.AddGeometryParameter("ContextGeometry", "Context Geometry",
             "Rhino Surfaces or Rhino Meshes", GH_ParamAccess.list);
-        //todo decide if we want to give this option
+        pManager[2].Optional = true;
         pManager.AddNumberParameter("GridSize", "Grid Size",
-            "Grid Size for output geometry", GH_ParamAccess.item);
+            "Grid Size for output geometry", GH_ParamAccess.item, 1.0);
+        pManager[3].Optional = true;
         pManager.AddBooleanParameter("Run_Simulation", "Run Simulation",
             "Run Simulation", GH_ParamAccess.item);
     }
@@ -48,7 +54,7 @@ namespace Helianthus
     /// <summary>
     /// Registers all the output parameters for this component.
     /// </summary>
-    protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
+    protected override void RegisterOutputParams(GH_OutputParamManager pManager)
     {
         pManager.AddTextParameter("Out", "Out", "Input Parameters",
             GH_ParamAccess.list);
@@ -73,41 +79,105 @@ namespace Helianthus
 
         if (!DA.GetData(0, ref weaFileLocation)) { return; }
         if (!DA.GetDataList(1, geometryInput)) { return; }
-        //todo optional???
-        if (!DA.GetDataList(2, contextGeometryInput)) { }
-        if (!DA.GetData(3, ref gridSize)) { return; }
+        DA.GetDataList(2, contextGeometryInput);
+        DA.GetData(3, ref gridSize);
         if (!DA.GetData(4, ref run_Simulation)) { return; }
         if (!run_Simulation){ return; }
 
-        string gendaymtx_arg_direct = GenDayMtxHelper.gendaymtx_arg_direct +
-                weaFileLocation;
-        string gendaymtx_arg_diffuse = GenDayMtxHelper.gendaymtx_arg_diffuse +
-                weaFileLocation;
-        GenDayMtxHelper genDayMtxHelper = new GenDayMtxHelper();
-        string directRadiationRGB = genDayMtxHelper.callGenDayMtx(
-            gendaymtx_arg_direct);
-        string diffuseRadiationRGB = genDayMtxHelper.callGenDayMtx(
-            gendaymtx_arg_diffuse);
-
-        List<double> directRadiationList;
-        List<double> diffuseRadiationList;
-        directRadiationList = genDayMtxHelper.convertRgbRadiationList(
-            directRadiationRGB);
-        diffuseRadiationList = genDayMtxHelper.convertRgbRadiationList(
-            diffuseRadiationRGB);
-
-        SimulationHelper simulationHelper = new SimulationHelper();
-        List<double> totalRadiationList = simulationHelper.getTotalRadiationList(
-            directRadiationList, diffuseRadiationList);
+        List<double> genDayMtxTotalRadiationList = getGenDayMtxTotalRadiation(
+            weaFileLocation);
 
         //create gridded mesh from geometry
-        MeshHelper meshHelper = new MeshHelper();
-        Mesh meshJoined = meshHelper.createGriddedMesh(geometryInput, gridSize);
+        Mesh joinedMesh = meshHelper.createGriddedMesh(geometryInput, gridSize);
 
+        List<double> finalRadiationList = getSimulationRadiationList(joinedMesh,
+            geometryInput, contextGeometryInput, genDayMtxTotalRadiationList);
+        double maxRadiation = finalRadiationList.Max();
+        double minRadiation = finalRadiationList.Min();
+
+        //create the mesh and color
+        Mesh finalMesh = meshHelper.createFinalMesh(joinedMesh);
+        List<Color> faceColors = meshHelper.getFaceColors(finalRadiationList,
+            maxRadiation);
+        meshHelper.colorFinalMesh(finalMesh, faceColors);
+
+        //Create Legend
+        Mesh legendMesh = createSiteSuitabilityLegend(finalMesh, minRadiation,
+            maxRadiation);
+
+        List<Mesh> finalMeshList = new List<Mesh>
+        {
+            finalMesh,
+            legendMesh
+        };
+
+        List<string> inputParams = new List<string>
+        {
+            weaFileLocation,
+            geometryInput.ToString(),
+            contextGeometryInput.ToString(),
+            gridSize.ToString()
+        };
+        
+        DA.SetDataList(0, inputParams);
+        DA.SetDataList(1, finalRadiationList);
+        DA.SetDataList(2, finalMeshList);
+    }
+
+    private Mesh createSiteSuitabilityLegend(Mesh mesh, double minRadiation,
+        double maxRadiation)
+    {
+        //Create Legend
+        LegendHelper legendHelper = new LegendHelper();
+        Mesh legendMesh = legendHelper.createLegend(mesh, true);
+
+        //Add legend descriptors
+        Mesh legendDescriptorMin = legendHelper.addLegendDescriptor(
+            Convert.ToString(Convert.ToInt32(minRadiation)) + " DLI",
+            legendMesh.GetBoundingBox(true).Max.X + 1,
+            legendMesh.GetBoundingBox(true).Min.Y, 1);
+        Mesh legendDescriptorMax = legendHelper.addLegendDescriptor(
+            Convert.ToString(Convert.ToInt32(maxRadiation)) + " DLI",
+            legendMesh.GetBoundingBox(true).Max.X + 1,
+            legendMesh.GetBoundingBox(true).Max.Y, 1);
+        legendMesh.Append(legendDescriptorMin);
+        legendMesh.Append(legendDescriptorMax);
+
+        return legendMesh;  
+    }
+
+    //todo maybe move this to gendaymtx helper
+    private List<double> getGenDayMtxTotalRadiation(string weaFileLocation)
+    {
+        GenDayMtxHelper genDayMtxHelper = new GenDayMtxHelper();
+        string directRadiationRGB = genDayMtxHelper.callGenDayMtx(
+            weaFileLocation, true);
+        string diffuseRadiationRGB = genDayMtxHelper.callGenDayMtx(
+            weaFileLocation, false);
+
+        SimulationHelper simulationHelper = new SimulationHelper();
+        List<double> directRadiationList;
+        List<double> diffuseRadiationList;
+        directRadiationList = simulationHelper.convertRgbRadiationList(
+            directRadiationRGB);
+        diffuseRadiationList = simulationHelper.convertRgbRadiationList(
+            diffuseRadiationRGB);
+
+        List<double> totalRadiationList = simulationHelper.
+            getTotalRadiationList(directRadiationList, diffuseRadiationList);
+
+        return totalRadiationList;
+    }
+
+    //todo maybe move this to simulation helper
+    private List<double> getSimulationRadiationList(Mesh joinedMesh,
+        List<Brep> geometryInput, List<Brep> contextGeometryInput,
+        List<double> genDayMtxTotalRadiationList)
+    {
         //add offset distance for all points representing the faces of the
         //gridded mesh
-        List<Point3d> points = meshHelper.getPointsOfMesh(meshJoined);
-        
+        List<Point3d> points = meshHelper.getPointsOfMesh(joinedMesh);
+
         // mesh together the geometry and the context
         Mesh contextMesh = meshHelper.getContextMesh(
             geometryInput, contextGeometryInput);
@@ -120,47 +190,14 @@ namespace Helianthus
         //intersect mesh rays
         IntersectionObject intersectionObject = simulationHelper.
             intersectMeshRays(contextMesh, points, allVectors,
-                meshJoined.FaceNormals);
-        
+                joinedMesh.FaceNormals);
+
         //compute the results
         List<double> finalRadiationList =
             simulationHelper.computeFinalRadiationList(intersectionObject,
-                totalRadiationList);
+                genDayMtxTotalRadiationList);
 
-        //create the mesh and color
-        double maxRadiation = finalRadiationList.Max();
-        double minRadiation = finalRadiationList.Min();
-
-        List<Color> faceColors = meshHelper.getFaceColors(finalRadiationList,
-            maxRadiation);
-        Mesh finalMesh = meshHelper.createFinalMesh(meshJoined);
-        meshHelper.colorFinalMesh(finalMesh, faceColors);
-
-        //Create Legend
-        LegendHelper legendHelper = new LegendHelper();
-        Mesh baseBarGraphMesh = legendHelper.createLegend(meshJoined, true);
-
-        //Add legend descriptors
-        Mesh legendDescriptorMin = legendHelper.addLegendDescriptor(
-            Convert.ToString(Convert.ToInt32(minRadiation)) + " DLI",
-            baseBarGraphMesh.GetBoundingBox(true).Max.X + 1,
-            baseBarGraphMesh.GetBoundingBox(true).Min.Y, 1);
-        Mesh legendDescriptorMax = legendHelper.addLegendDescriptor(
-            Convert.ToString(Convert.ToInt32(maxRadiation)) + " DLI",
-            baseBarGraphMesh.GetBoundingBox(true).Max.X + 1,
-            baseBarGraphMesh.GetBoundingBox(true).Max.Y, 1);
-
-        List<Mesh> finalMeshList = new List<Mesh>
-        {
-            finalMesh,
-            baseBarGraphMesh,
-            legendDescriptorMin,
-            legendDescriptorMax
-        };
-
-        DA.SetDataList(0, finalRadiationList);
-        DA.SetDataList(1, finalRadiationList);
-        DA.SetDataList(2, finalMeshList);
+        return finalRadiationList;
     }
 
     /// <summary>

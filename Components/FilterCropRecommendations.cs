@@ -3,6 +3,7 @@ using System.Collections.Generic;
 
 using Grasshopper;
 using Grasshopper.Kernel;
+using Grasshopper.Kernel.Types;
 
 namespace Helianthus.Components
 {
@@ -29,9 +30,9 @@ namespace Helianthus.Components
     /// </summary>
     protected override void RegisterInputParams(GH_Component.GH_InputParamManager pManager)
     {
-        pManager.AddGenericParameter("Crop_Recommendations",
+        pManager.AddTextParameter("Crop_Recommendations",
             "Crop_Recommendations",
-            "Crop_Recommendations", GH_ParamAccess.list);
+            "Crop_Recommendations", GH_ParamAccess.tree);
         pManager.AddTextParameter("January_Crops",
             "January Crops",
             "January Crops", GH_ParamAccess.list);
@@ -77,11 +78,11 @@ namespace Helianthus.Components
     {
         pManager.AddTextParameter("Out", "Out", "Input Parameters",
             GH_ParamAccess.list);
-        pManager.AddGenericParameter("Crop_Selection",
+        pManager.AddTextParameter("Crop_Selection",
             "Crop Selection", "Crop Selection", GH_ParamAccess.list);
-        pManager.AddTextParameter("Crop_Names", "Crop Names", "Crop Names",
+        pManager.AddTextParameter("Warnings", "Warnings", "Warnings",
             GH_ParamAccess.list);
-        }
+    }
 
     /// <summary>
     /// This is the method that actually does the work.
@@ -90,7 +91,10 @@ namespace Helianthus.Components
     /// to store data in output parameters.</param>
     protected override void SolveInstance(IGH_DataAccess DA)
     {
-        List<List<CropDataObject>> cropDataInput = new List<List<CropDataObject>>();
+
+        Grasshopper.Kernel.Data.GH_Structure<GH_String> cropDataInput = new Grasshopper.Kernel.Data.GH_Structure<GH_String>();
+        //DataTree<StringTest> cropDataInput = new DataTree<StringTest>();
+        //GH_StructurePath<StringTest> cropDataInput = new DataTree<StringTest>();
         List<string> janCrops = new List<string>();
         List<string> febCrops = new List<string>();
         List<string> marCrops = new List<string>();
@@ -104,7 +108,7 @@ namespace Helianthus.Components
         List<string> novCrops = new List<string>();
         List<string> decCrops = new List<string>();
 
-        if (!DA.GetDataList(0, cropDataInput)) { return; }
+        if (!DA.GetDataTree (0, out cropDataInput)) { return; }
         if (!DA.GetDataList(1, janCrops)) { return; }
         if (!DA.GetDataList(2, febCrops)) { return; }
         if (!DA.GetDataList(3, marCrops)) { return; }
@@ -118,6 +122,7 @@ namespace Helianthus.Components
         if (!DA.GetDataList(11, novCrops)) { return; }
         if (!DA.GetDataList(12, decCrops)) { return; }
 
+
         List<List<string>> userInputMonthlyCrops = new List<List<string>>
         {
             janCrops,
@@ -126,42 +131,46 @@ namespace Helianthus.Components
             aprCrops,
             marCrops,
             junCrops,
-            junCrops,
+            julCrops,
             augCrops,
             sepCrops,
             octCrops,
             novCrops,
             decCrops
         };
-        
-        List<List<CropDataObject>> finalCropList = new List<List<CropDataObject>>();
-        List<List<string>> finalCropListNames = new List<List<string>>();
 
+        DataTree<string> finalCropList = new DataTree<string>();
+        List<string> warnings = new List<string>();
         int monthCount = 0;
-        foreach(List<CropDataObject> inputCropList in cropDataInput)
+        foreach(List<string> monthlyUserListCrops in userInputMonthlyCrops)
         {
-            List<CropDataObject> cropList = new List<CropDataObject>();
-            List<string> cropListNames = new List<string>();
-            foreach(string cropName in userInputMonthlyCrops[monthCount])
+            foreach (string cropName in monthlyUserListCrops)
             {
-                foreach(CropDataObject crop in inputCropList)
+                Grasshopper.Kernel.Data.GH_Path path = new Grasshopper.Kernel.Data.GH_Path(monthCount + 1);
+                List<GH_String> recMonthCropList = cropDataInput.Branches[monthCount];
+                bool found = false;
+                foreach (GH_String cropRecName in recMonthCropList)
                 {
-                    if (crop.getSpecie().Equals(cropName))
+                    if (cropRecName.ToString().Equals(cropName))
                     {
-                        cropList.Add(crop);
-                        cropListNames.Add(cropName);
+                        found = true;
+                        break;
                     }
                 }
+                if (!found)
+                {
+                    warnings.Add("month: " + (monthCount + 1) + " unrecognized or unrecommended name: " + cropName);
+                }
+                finalCropList.Add(cropName, path);
             }
-            finalCropList.Add(cropList);
-            finalCropListNames.Add(cropListNames);
+            monthCount++;
         }
 
-        DA.SetDataList(0, finalCropList);
-        DA.SetDataList(1, finalCropList);
-        DA.SetDataList(2, finalCropListNames.ToArray());
+        DA.SetDataList(0, new List<string>());
+        DA.SetDataTree(1, finalCropList);
+        DA.SetDataList(2, warnings);
 
-        }
+    }
 
     /// <summary>
     /// Provides an Icon for every component that will be visible in the User Interface.
