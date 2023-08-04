@@ -330,6 +330,35 @@ namespace Helianthus
 
             return surfaceSunlightDLI;
         }
+
+    public List<double> getSimulationRadiationList(Mesh joinedMesh,
+        List<Brep> geometryInput, List<Brep> contextGeometryInput,
+        List<double> genDayMtxTotalRadiationList)
+    {
+        //add offset distance for all points representing the faces of the
+        //gridded mesh
+        MeshHelper meshHelper = new MeshHelper();
+        List<Point3d> points = meshHelper.getPointsOfMesh(joinedMesh);
+
+        // mesh together the geometry and the context
+        Mesh contextMesh = meshHelper.getContextMesh(
+            geometryInput, contextGeometryInput);
+
+        //get tragenza dome vectors. to use for intersection later
+        Mesh tragenzaDomeMesh = getTragenzaDome();
+        List<Vector3d> allVectors = getAllVectors(
+            tragenzaDomeMesh);
+
+        //intersect mesh rays
+        IntersectionObject intersectionObject = intersectMeshRays(contextMesh,
+            points, allVectors, joinedMesh.FaceNormals);
+
+        //compute the results
+        List<double> finalRadiationList = computeFinalRadiationList(
+            intersectionObject, genDayMtxTotalRadiationList);
+
+        return finalRadiationList;
+    }
     }
 }
 

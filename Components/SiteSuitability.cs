@@ -12,6 +12,7 @@ namespace Helianthus
   {
     private MeshHelper meshHelper;
     private SimulationHelper simulationHelper;
+    private GenDayMtxHelper genDayMtxHelper;
 
     /// <summary>
     /// Each implementation of GH_Component must provide a public 
@@ -30,6 +31,7 @@ namespace Helianthus
     {
         meshHelper = new MeshHelper();
         simulationHelper = new SimulationHelper();
+        genDayMtxHelper = new GenDayMtxHelper();
     }
 
     /// <summary>
@@ -84,13 +86,13 @@ namespace Helianthus
         if (!DA.GetData(4, ref run_Simulation)) { return; }
         if (!run_Simulation){ return; }
 
-        List<double> genDayMtxTotalRadiationList = getGenDayMtxTotalRadiation(
-            weaFileLocation);
+        List<double> genDayMtxTotalRadiationList = genDayMtxHelper.
+            getGenDayMtxTotalRadiation(weaFileLocation);
 
         //create gridded mesh from geometry
         Mesh joinedMesh = meshHelper.createGriddedMesh(geometryInput, gridSize);
 
-        List<double> finalRadiationList = getSimulationRadiationList(joinedMesh,
+        List<double> finalRadiationList = simulationHelper.getSimulationRadiationList(joinedMesh,
             geometryInput, contextGeometryInput, genDayMtxTotalRadiationList);
         double maxRadiation = finalRadiationList.Max();
         double minRadiation = finalRadiationList.Min();
@@ -144,60 +146,6 @@ namespace Helianthus
         legendMesh.Append(legendDescriptorMax);
 
         return legendMesh;  
-    }
-
-    //todo maybe move this to gendaymtx helper
-    private List<double> getGenDayMtxTotalRadiation(string weaFileLocation)
-    {
-        GenDayMtxHelper genDayMtxHelper = new GenDayMtxHelper();
-        string directRadiationRGB = genDayMtxHelper.callGenDayMtx(
-            weaFileLocation, true);
-        string diffuseRadiationRGB = genDayMtxHelper.callGenDayMtx(
-            weaFileLocation, false);
-
-        SimulationHelper simulationHelper = new SimulationHelper();
-        List<double> directRadiationList;
-        List<double> diffuseRadiationList;
-        directRadiationList = simulationHelper.convertRgbRadiationList(
-            directRadiationRGB);
-        diffuseRadiationList = simulationHelper.convertRgbRadiationList(
-            diffuseRadiationRGB);
-
-        List<double> totalRadiationList = simulationHelper.
-            getTotalRadiationList(directRadiationList, diffuseRadiationList);
-
-        return totalRadiationList;
-    }
-
-    //todo maybe move this to simulation helper
-    private List<double> getSimulationRadiationList(Mesh joinedMesh,
-        List<Brep> geometryInput, List<Brep> contextGeometryInput,
-        List<double> genDayMtxTotalRadiationList)
-    {
-        //add offset distance for all points representing the faces of the
-        //gridded mesh
-        List<Point3d> points = meshHelper.getPointsOfMesh(joinedMesh);
-
-        // mesh together the geometry and the context
-        Mesh contextMesh = meshHelper.getContextMesh(
-            geometryInput, contextGeometryInput);
-
-        //get tragenza dome vectors. to use for intersection later
-        Mesh tragenzaDomeMesh = simulationHelper.getTragenzaDome();
-        List<Vector3d> allVectors = simulationHelper.getAllVectors(
-            tragenzaDomeMesh);
-
-        //intersect mesh rays
-        IntersectionObject intersectionObject = simulationHelper.
-            intersectMeshRays(contextMesh, points, allVectors,
-                joinedMesh.FaceNormals);
-
-        //compute the results
-        List<double> finalRadiationList =
-            simulationHelper.computeFinalRadiationList(intersectionObject,
-                genDayMtxTotalRadiationList);
-
-        return finalRadiationList;
     }
 
     /// <summary>

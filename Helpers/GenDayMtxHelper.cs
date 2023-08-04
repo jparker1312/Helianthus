@@ -15,7 +15,29 @@ namespace Helianthus
 		{
 		}
 
-		public string callGenDayMtx(string weaFileLocation, bool getDirectRadiation)
+        public List<double> getGenDayMtxTotalRadiation(string weaFileLocation)
+        {
+            GenDayMtxHelper genDayMtxHelper = new GenDayMtxHelper();
+            string directRadiationRGB = genDayMtxHelper.callGenDayMtx(
+                weaFileLocation, true);
+            string diffuseRadiationRGB = genDayMtxHelper.callGenDayMtx(
+                weaFileLocation, false);
+
+            SimulationHelper simulationHelper = new SimulationHelper();
+            List<double> directRadiationList;
+            List<double> diffuseRadiationList;
+            directRadiationList = simulationHelper.convertRgbRadiationList(
+                directRadiationRGB);
+            diffuseRadiationList = simulationHelper.convertRgbRadiationList(
+                diffuseRadiationRGB);
+
+            List<double> totalRadiationList = simulationHelper.
+                getTotalRadiationList(directRadiationList, diffuseRadiationList);
+
+            return totalRadiationList;
+        }
+
+        public string callGenDayMtx(string weaFileLocation, bool getDirectRadiation)
         {
             ProcessStartInfo startInfo = new ProcessStartInfo();
             startInfo.UseShellExecute = false;
@@ -48,21 +70,25 @@ namespace Helianthus
             return stdOut;
         }
 
-        public List<string> runMonthlyGenDayMtxSimulations(string pathname,
-            List<string> monthlyRange, bool getDirectRadiation)
+        public List<List<double>> runMonthlyGenDayMtxSimulations2(string pathname,
+            List<string> monthlyRange)
         {
-            List<string> monthlySimulations = new List<string>();
-            for (int monthCount = 1; monthCount <= 12; monthCount++)
+            List<List<double>> totalRadiationListByMonth = new List<List<double>>();
+            for (int monthCount10 = 1; monthCount10 <= 12; monthCount10++)
             {
-                if (monthlyRange.Contains(Convert.ToString(monthCount)))
+                if (monthlyRange.Contains(Convert.ToString(monthCount10)))
                 {
                     string weaFileLocation = pathname + "weaMonth-" +
-                        monthCount + ".wea";
-                    string radiationRGB = callGenDayMtx(weaFileLocation, getDirectRadiation);
-                    monthlySimulations.Add(radiationRGB);
+                        monthCount10 + ".wea";
+
+                    List<double> genDayMtxTotalRadiationList = 
+                        getGenDayMtxTotalRadiation(weaFileLocation);
+
+                    totalRadiationListByMonth.Add(genDayMtxTotalRadiationList);
                 }
             }
-            return monthlySimulations;
+
+            return totalRadiationListByMonth;
         }
 	}
 }

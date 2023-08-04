@@ -91,6 +91,7 @@ namespace Helianthus
                 //get percentage of difference
                 double tempRadPercentage = rad / maxRadiation;
                 colorIndTemp = step;
+                bool colorSet = false;
                 for(int colorIndCount = 0; colorIndCount < Config.DLI_COLOR_RANGE.Count; colorIndCount++)
                 {
                     if( tempRadPercentage <= colorIndTemp ||
@@ -119,9 +120,15 @@ namespace Helianthus
 
                         faceColors.Add(Color.FromArgb(Convert.ToInt32(red),
                             Convert.ToInt32(green), Convert.ToInt32(blue)));
+                        colorSet = true;
                         break;
                     }
                     colorIndTemp += step;
+                }
+
+                if (!colorSet)
+                {
+
                 }
             }
 
@@ -353,6 +360,28 @@ namespace Helianthus
             }
 
             return finalColor;
+        }
+
+        public void rotateSurfaceToTopView(Mesh mesh, double diagramRotation,
+            Vector3d diagramRotationAxis)
+        {
+            Vector3d faceNrm = mesh.FaceNormals.First();
+            if (faceNrm.IsPerpendicularTo(new Vector3d(0, 0, 1)))
+            {
+                Point3d cen = mesh.GetBoundingBox(true).Center;
+                //todo or set perpendicular to itself?
+                faceNrm.Rotate(1.5708, new Vector3d(0, 0, 1));
+                //todo need to change this rotation for planes that are
+                //not completely vertical
+                mesh.Rotate(-1.5708, faceNrm, cen);
+
+                //todo this needs to be seperated
+                if (diagramRotation != 0)
+                {
+                    double radians = (Math.PI / 180) * diagramRotation;
+                    mesh.Rotate(radians, diagramRotationAxis, cen);
+                }
+            }
         }
     }
 }

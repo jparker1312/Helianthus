@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using Grasshopper.Kernel;
 
 namespace Helianthus
 {
@@ -63,27 +64,35 @@ namespace Helianthus
 		{
 			List<List<string>> monthlyList = new List<List<string>>();
 
-			for (int monthCount = 1; monthCount <= 12; monthCount++)
+			try
 			{
-				List<string> month = lines.GetRange(0, 6);
-				foreach(string line in lines)
-				{
-					string[] tempLines = line.Split(' ');
-					if (tempLines[0] == Convert.ToString(monthCount)){
-						month.Add(line);
-					}
-				}
+                for (int monthCount = 1; monthCount <= 12; monthCount++)
+                {
+                    List<string> month = lines.GetRange(0, 6);
+                    foreach (string line in lines)
+                    {
+                        string[] tempLines = line.Split(' ');
+                        if (tempLines[0] == Convert.ToString(monthCount))
+                        {
+                            month.Add(line);
+                        }
+                    }
 
-				monthlyList.Add(month);
+                    monthlyList.Add(month);
+                }
+
+                int monthlyCount = 1;
+                foreach (List<string> monthLines in monthlyList)
+                {
+                    File.WriteAllLines(path + "weaMonth-" + monthlyCount + ".wea", monthLines);
+                    monthlyCount++;
+                }
+            }
+			catch (Exception e)
+			{
+                return false;
 			}
 
-			int monthlyCount = 1;
-			foreach(List<string> monthLines in monthlyList)
-			{
-				File.WriteAllLines(path + "weaMonth-" + monthlyCount + ".wea", monthLines);
-				monthlyCount++;
-			}
-			
 			return true;
 		}
 	}

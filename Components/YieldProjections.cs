@@ -29,13 +29,15 @@ namespace Helianthus.Components
     /// <summary>
     /// Registers all the input parameters for this component.
     /// </summary>
-    protected override void RegisterInputParams(GH_Component.GH_InputParamManager pManager)
+    protected override void RegisterInputParams(GH_InputParamManager pManager)
     {
         pManager.AddGenericParameter(
-            "Crop_Surface_Object",
-            "Crop Surface Object",
-            "Crop Surface Object",
-            GH_ParamAccess.item);
+            "Tiled_Mesh_Obect",
+            "Tiled Mesh Obect",
+            "Tiled Mesh Obect",
+            GH_ParamAccess.list);
+        pManager.AddGenericParameter("CropsToVisualize", "Crops To Visualize",
+            "List of Crops that you want to visualize", GH_ParamAccess.list);
         pManager.AddTextParameter(
             "Crop_Projections",
             "Crop Projections",
@@ -43,13 +45,12 @@ namespace Helianthus.Components
             GH_ParamAccess.tree);
         pManager.AddBooleanParameter("Run_Simulation", "Run Simulation",
             "Run Simulation", GH_ParamAccess.item);
-        }
-
+    }
 
     /// <summary>
     /// Registers all the output parameters for this component.
     /// </summary>
-    protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
+    protected override void RegisterOutputParams(GH_OutputParamManager pManager)
     {
         pManager.AddTextParameter("Out", "Out", "Input Parameters",
             GH_ParamAccess.list);
@@ -64,18 +65,17 @@ namespace Helianthus.Components
     /// to store data in output parameters.</param>
     protected override void SolveInstance(IGH_DataAccess DA)
     {
-        //todo get params
-        //List<Mesh> meshInput = new List<Mesh>();
-        //CropSurfaceObject cropSurfaceObject = new CropSurfaceObject();
-
-        CropSurfaceObject cropSurfaceObject = new CropSurfaceObject();
-        Grasshopper.Kernel.Data.GH_Structure<GH_String> cropDataInput = new Grasshopper.Kernel.Data.GH_Structure<GH_String>();
+        List<TiledMeshObject> tiledMeshObjects = new List<TiledMeshObject>();
+        List<CropDataObject> cropData = new List<CropDataObject>();
+        Grasshopper.Kernel.Data.GH_Structure<GH_String> cropDataInput =
+            new Grasshopper.Kernel.Data.GH_Structure<GH_String>();
         bool run_Simulation = false;
 
         //if (!DA.GetData(0, ref cropSurfaceObject)) { return; }
-        if (!DA.GetData(0, ref cropSurfaceObject)) { return; }
-        if (!DA.GetDataTree(1, out cropDataInput)) { return; }
-        if (!DA.GetData(2, ref run_Simulation)) { return; }
+        if (!DA.GetDataList(0, tiledMeshObjects)) { return; }
+        if (!DA.GetDataList(1, cropData)) { return; }
+        if (!DA.GetDataTree(2, out cropDataInput)) { return; }
+        if (!DA.GetData(3, ref run_Simulation)) { return; }
 
         if (!run_Simulation){ return; }
 
@@ -101,9 +101,9 @@ namespace Helianthus.Components
         //todo overall max radiation will be result of full crop list
 
         int maxOverallYield = 0;
-        foreach (CropDataObject cropDataObject in cropSurfaceObject.getCropDataObjectList())
+        foreach (CropDataObject cropDataObject in cropData)
         {
-            if(cropDataObject.getMonthlyCropYield() > maxOverallYield)
+            if (cropDataObject.getMonthlyCropYield() > maxOverallYield)
             {
                 maxOverallYield = Convert.ToInt32(cropDataObject.getMonthlyCropYield());
             }
@@ -113,11 +113,11 @@ namespace Helianthus.Components
         BarGraphHelper barGraphHelper = new BarGraphHelper();
         MeshHelper meshHelper = new MeshHelper();
         int monthlyCount = 0;
-        foreach(Mesh monthlyMesh in cropSurfaceObject.getTiledMeshList())
+        foreach(TiledMeshObject tiledMeshObject in tiledMeshObjects)
         {
             Mesh barGraphMesh = barGraphHelper.createBarGraphYield(
-                monthlyMesh, cropSurfaceObject.getCropDataObjectList(),
-                selectedCropsByMonth[monthlyCount], maxOverallYield);
+                tiledMeshObject.getBarGraphMesh().getBarGraphMesh(),
+                cropData, selectedCropsByMonth[monthlyCount], maxOverallYield);
 
             Mesh yieldTitleText = meshHelper.getTitleTextMesh(
                 "Yield Projections", barGraphMesh, 1, 2);
@@ -131,11 +131,13 @@ namespace Helianthus.Components
             monthlyCount++;
         }
 
-        finalMeshList.AddRange(cropSurfaceObject.getTiledMeshList());
+        //todo go through the tiled objects and get appended surfaces
+        foreach(TiledMeshObject tiledMesh in tiledMeshObjects)
+        {
+            finalMeshList.Add(tiledMesh.appendAllMeshes());
+        }
 
 
-        //previousX = meshBase2dPlane.GetBoundingBox(true).Max.X -
-        //        meshBase2dPlane.GetBoundingBox(true).Min.X;
 
         //todo some output tbd
         DA.SetDataList(0, cropDataInput);
