@@ -10,6 +10,9 @@ namespace Helianthus.Components
 {
   public class YieldProjections : GH_Component
   {
+    private BarGraphHelper barGraphHelper;
+    private MeshHelper meshHelper;
+
     /// <summary>
     /// Each implementation of GH_Component must provide a public 
     /// constructor without any arguments.
@@ -24,6 +27,8 @@ namespace Helianthus.Components
              "Helianthus",
              "03 | Visualize Data")
     {
+        barGraphHelper = new BarGraphHelper();
+        meshHelper = new MeshHelper();
     }
 
     /// <summary>
@@ -71,7 +76,6 @@ namespace Helianthus.Components
             new Grasshopper.Kernel.Data.GH_Structure<GH_String>();
         bool run_Simulation = false;
 
-        //if (!DA.GetData(0, ref cropSurfaceObject)) { return; }
         if (!DA.GetDataList(0, tiledMeshObjects)) { return; }
         if (!DA.GetDataList(1, cropData)) { return; }
         if (!DA.GetDataTree(2, out cropDataInput)) { return; }
@@ -79,13 +83,11 @@ namespace Helianthus.Components
 
         if (!run_Simulation){ return; }
 
-        //todo cycle through tiled meshes and assign a crop to each face according to DLI: not needed currently
-        //todo cycle through the new value list to calculate the total yield per month for each crop: not needed currently
-
-        //todo create bar graph of yields highlighting the selected crops for each month
-
+        //create bar graph of yields highlighting the selected crops for each
+        //month
         List<List<string>> selectedCropsByMonth = new List<List<string>>();
-        for(int monthCount =0; monthCount < cropDataInput.Branches.Count; monthCount++)
+        for(int monthCount =0; monthCount < cropDataInput.Branches.Count;
+                monthCount++)
         {
             List<string> cropNames = new List<string>();
             foreach (GH_String cropName in cropDataInput.Branches[monthCount])
@@ -95,51 +97,41 @@ namespace Helianthus.Components
             selectedCropsByMonth.Add(cropNames);
         }
 
-
-        //todo need prior meshes for alignment
-        //todo need full crop list. can get this from same object
-        //todo overall max radiation will be result of full crop list
-
         int maxOverallYield = 0;
         foreach (CropDataObject cropDataObject in cropData)
         {
             if (cropDataObject.getMonthlyCropYield() > maxOverallYield)
             {
-                maxOverallYield = Convert.ToInt32(cropDataObject.getMonthlyCropYield());
+                maxOverallYield = Convert.ToInt32(cropDataObject.
+                    getMonthlyCropYield());
             }
         }
 
         List<Mesh> finalMeshList = new List<Mesh>();
-        BarGraphHelper barGraphHelper = new BarGraphHelper();
-        MeshHelper meshHelper = new MeshHelper();
         int monthlyCount = 0;
         foreach(TiledMeshObject tiledMeshObject in tiledMeshObjects)
         {
-            Mesh barGraphMesh = barGraphHelper.createBarGraphYield(
+            Mesh barGraphMesh = barGraphHelper.createBarGraph2(
                 tiledMeshObject.getBarGraphMesh().getBarGraphMesh(),
-                cropData, selectedCropsByMonth[monthlyCount], maxOverallYield);
+                cropData, 0, maxOverallYield,
+                selectedCropsByMonth[monthlyCount],
+                Convert.ToString(Config.BarGraphType.YIELD));
 
             Mesh yieldTitleText = meshHelper.getTitleTextMesh(
-                "Yield Projections", barGraphMesh, 1, 2);
+                "Yield Projections (kg?)", barGraphMesh, 1, 2);
                 barGraphMesh.Append(yieldTitleText);
 
-            //add bg plane
-            Mesh meshBase2dPlane = meshHelper.create2dBaseMesh(barGraphMesh);
-            barGraphMesh.Append(meshBase2dPlane);
+            Mesh appendedMesh = tiledMeshObject.appendAllMeshes();
+            appendedMesh.Append(barGraphMesh);
 
-            finalMeshList.Add(barGraphMesh);
+            //add bg plane
+            Mesh meshBase2dPlane = meshHelper.create2dBaseMesh(appendedMesh);
+            appendedMesh.Append(meshBase2dPlane);
+
+            finalMeshList.Add(appendedMesh);
             monthlyCount++;
         }
 
-        //todo go through the tiled objects and get appended surfaces
-        foreach(TiledMeshObject tiledMesh in tiledMeshObjects)
-        {
-            finalMeshList.Add(tiledMesh.appendAllMeshes());
-        }
-
-
-
-        //todo some output tbd
         DA.SetDataList(0, cropDataInput);
         DA.SetDataList(1, finalMeshList);
     }

@@ -203,24 +203,25 @@ namespace Helianthus
             Point3d maxBoundingBoxGeometry = inputMesh.GetBoundingBox(true).Max;
 
             //scale the bounding box based on input
-            //todo need to think about scale
-            //maxBoundingBoxGeometry = Point3d.Multiply(maxBoundingBoxGeometry, 1);
-            double boundingBoxWidth = maxBoundingBoxGeometry.X - minBoundingBoxGeometry.X;
-            double boundingBoxHeight = maxBoundingBoxGeometry.Y - minBoundingBoxGeometry.Y;
+            double boundingBoxWidth = maxBoundingBoxGeometry.X -
+                minBoundingBoxGeometry.X;
+            double boundingBoxHeight = maxBoundingBoxGeometry.Y -
+                minBoundingBoxGeometry.Y;
 
-            Interval xIntervalBaseMesh = new Interval(minBoundingBoxGeometry.X,
-                minBoundingBoxGeometry.X + boundingBoxWidth);
-            Interval yintervalBaseMesh = new Interval(minBoundingBoxGeometry.Y,
-                minBoundingBoxGeometry.Y + boundingBoxHeight);
+            Interval xIntervalBaseMesh = new Interval(
+                minBoundingBoxGeometry.X - 1,
+                minBoundingBoxGeometry.X + boundingBoxWidth + 1);
+            Interval yintervalBaseMesh = new Interval(
+                minBoundingBoxGeometry.Y - 1,
+                minBoundingBoxGeometry.Y + boundingBoxHeight + 1);
 
             //offset starter plane on z axis so that it does not interfer with
-            //ground geometry. TODO: Take this as input 
             Plane basePlane = new Plane(new Point3d(0, 0, 0.0001), zaxis);
             Mesh baseMesh = Mesh.CreateFromPlane(basePlane,
                 xIntervalBaseMesh, yintervalBaseMesh, 1, 1);
 
             //deaulting to a white color. Could allow for specification of base color...
-            //todo make this editable
+            //todo make this editable?
             baseMesh.VertexColors.CreateMonotoneMesh(
                 Color.FromArgb(50, 250, 250, 250));
 

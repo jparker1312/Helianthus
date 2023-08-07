@@ -163,8 +163,9 @@ namespace Helianthus
                 centerPointY, 0.001);
             Plane plane_crop = new Plane(center_point_crops, zaxis);
 
+            //todo change how the rectangle width is calculated
             TextEntity textEntityCropName = TextEntity.Create(text, plane_crop,
-                defaultDimensionStyle, true, 10, 0);
+                defaultDimensionStyle, true, 3, 0);
 
             MeshHelper meshHelper = new MeshHelper();
             Mesh finalTextMesh = meshHelper.createTextMesh(textEntityCropName,

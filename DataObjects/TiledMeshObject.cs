@@ -43,7 +43,7 @@ namespace Helianthus
 
         public void setTitleMesh(Mesh mesh)
         {
-            tiledMesh = mesh;
+            titleMesh = mesh;
         }
 
         public void setLegendMesh(Mesh mesh)
@@ -53,7 +53,7 @@ namespace Helianthus
 
         public void setBackgroundMesh(Mesh mesh)
         {
-            tiledMesh = mesh;
+            backgroundMesh = mesh;
         }
 
         public void setRadiationList(List<double> radiationValues)

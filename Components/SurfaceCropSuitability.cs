@@ -12,13 +12,8 @@ namespace Helianthus
 
   public class SurfaceCropSuitability : GH_Component
   {
-    enum Months  
-    {  
-        January, February, March, April, May, June, July, August, September,
-        October, November, December  
-    };
-
     private MeshHelper meshHelper;
+    private SimulationHelper simulationHelper;
 
     /// <summary>
     /// Each implementation of GH_Component must provide a public 
@@ -36,6 +31,7 @@ namespace Helianthus
              "02 | Analyze Data")
     {
         meshHelper = new MeshHelper();
+        simulationHelper = new SimulationHelper();
     }
 
     /// <summary>
@@ -152,10 +148,9 @@ namespace Helianthus
 
         double overallMaxRadiation = 0;
         double overallMinRadiation = 0;
-        SimulationHelper simulationHelper = new SimulationHelper();
         DataTree<double> dataTreeRadiation = new DataTree<double>();
         DataTree<string> monthlyCropsThatFitRangeString = new DataTree<string>();
-        int monthCount20 = 1;
+        int monthCount = 1;
         List<TiledMeshObject> tiledMeshObjects = new List<TiledMeshObject>();
         foreach(List<double> radiationList in totalRadiationListByMonth)
         {
@@ -178,7 +173,7 @@ namespace Helianthus
             //data trees to the indiv tiled objects
             //todo can i simplify this and put this in the tiled object?
             Grasshopper.Kernel.Data.GH_Path path = new
-                    Grasshopper.Kernel.Data.GH_Path(monthCount20);
+                    Grasshopper.Kernel.Data.GH_Path(monthCount);
             dataTreeRadiation.AddRange(radiationList, path);
 
             List<string> recCropList = populateDataTreeWithRecommendedCrops2(
@@ -191,25 +186,26 @@ namespace Helianthus
             tiledMeshObject.setRadiationList(finalRadiationList);
             tiledMeshObject.setMonthlyCropsList(recCropList);
             tiledMeshObjects.Add(tiledMeshObject);
-            monthCount20++;
+            monthCount++;
         }
 
         //start of specific monthly calls
         //variable for previous bounding box if there is one
-        double previousBoundingBoxX = 0;
-        
+        Point3d previousBoundingBoxX = new Point3d();  
         List<Mesh> finalMeshList = new List<Mesh>();
-        int monthCount = 0;
+        monthCount = 0;
         foreach(TiledMeshObject tiledMeshObject in tiledMeshObjects)
         {
             Mesh monthlyFinalMesh = finalMesh.DuplicateMesh();
             Mesh tempAppendedMeshTiled = new Mesh();
 
+            //color mesh tiles
             createTiledMeshSection(tiledMeshObject, monthlyFinalMesh,
                 overallMaxRadiation, overallMinRadiation, diagramRotation,
                 diagramRotationAxis, previousBoundingBoxX, monthCount,
                 diagramCenterpoint, tempAppendedMeshTiled);
 
+            //create bar graph
             double maxRadiation = tiledMeshObject.getRadiationList().Max();
             BarGraphObject barGraphObject = createBarGraphSection(
                 tempAppendedMeshTiled, cropDataInput, legendData, maxRadiation,
@@ -219,7 +215,7 @@ namespace Helianthus
             //add month name
             //todo change width calculation
             Mesh monthTitleMesh = meshHelper.getTitleTextMesh(
-                Convert.ToString((Months)monthCount), tempAppendedMeshTiled,
+                Convert.ToString((Config.Months)monthCount), tempAppendedMeshTiled,
                 2, 4);
             tiledMeshObject.setMonthTitleMesh(monthTitleMesh);
             tempAppendedMeshTiled.Append(monthTitleMesh);
@@ -230,10 +226,8 @@ namespace Helianthus
             tiledMeshObject.setBackgroundMesh(meshBase2dPlane);
             tempAppendedMeshTiled.Append(meshBase2dPlane);
 
-            //set current bounding box for use incrementing next section
-            //position
-            previousBoundingBoxX = meshBase2dPlane.GetBoundingBox(true).Max.X -
-                    meshBase2dPlane.GetBoundingBox(true).Min.X;
+            //incrementing next section position
+            previousBoundingBoxX = meshBase2dPlane.GetBoundingBox(true).Max;
 
             finalMeshList.Add(tempAppendedMeshTiled);
             monthCount++;
@@ -263,7 +257,7 @@ namespace Helianthus
     private void createTiledMeshSection(TiledMeshObject tiledMeshObject,
         Mesh monthlyFinalMesh, double overallMaxRadiation,
         double overallMinRadiation, double diagramRotation,
-        Vector3d diagramRotationAxis, double previousBoundingBoxX,
+        Vector3d diagramRotationAxis, Point3d previousBoundingBox,
         int monthCount, Point3d diagramCenterpoint, Mesh tempAppendedMeshTiled)
     {
         //color the mesh
@@ -276,8 +270,13 @@ namespace Helianthus
         meshHelper.rotateSurfaceToTopView(monthlyFinalMesh, diagramRotation,
             diagramRotationAxis);
 
-        incrementMeshPositionOnX(monthlyFinalMesh, previousBoundingBoxX,
-            monthCount, diagramCenterpoint);
+        Point3d cenPtMesh = monthlyFinalMesh.GetBoundingBox(true).Center;
+        Vector3d translateVector = Point3d.Subtract(
+        diagramCenterpoint, cenPtMesh);
+        monthlyFinalMesh.Translate(translateVector);
+
+        incrementMeshPosition(monthlyFinalMesh, previousBoundingBox,
+            monthCount);
 
         tiledMeshObject.setTiledMesh(monthlyFinalMesh);
         tempAppendedMeshTiled.Append(monthlyFinalMesh);
@@ -285,7 +284,7 @@ namespace Helianthus
         //add horizontal legend
         double maxRadiation = tiledMeshObject.getRadiationList().Max();
         double minRadiation = tiledMeshObject.getRadiationList().Min();
-        Mesh legendMesh = createLegendWithDescriptors(tempAppendedMeshTiled,
+        Mesh legendMesh = createLegendWithDescriptors(monthlyFinalMesh,
             minRadiation, maxRadiation, overallMinRadiation,
             overallMaxRadiation);
         tiledMeshObject.setLegendMesh(legendMesh);
@@ -308,49 +307,33 @@ namespace Helianthus
         BarGraphObject barGraphObject = new BarGraphObject();
         //add section header for Bar
         Mesh cropRecommendationsTitleMesh = meshHelper.
-                getTitleTextMeshByPosition(
-            "Crop Recommendations",
-            new Point3d(boundingMesh.GetBoundingBox(true).Min.X,
-            boundingMesh.GetBoundingBox(true).Min.Y - 2, 0.001),
-            1,
-            boundingMesh.GetBoundingBox(true).Max.X -
-            boundingMesh.GetBoundingBox(true).Min.X);
+            getTitleTextMeshByPosition("Crop Recommendations",
+                new Point3d(boundingMesh.GetBoundingBox(true).Min.X,
+                boundingMesh.GetBoundingBox(true).Min.Y - 2, 0.001), 1,
+                boundingMesh.GetBoundingBox(true).Max.X -
+                boundingMesh.GetBoundingBox(true).Min.X);
 
         barGraphObject.setTitleMesh(cropRecommendationsTitleMesh);
         boundingMesh.Append(cropRecommendationsTitleMesh);
 
         //create bar graph mesh
         BarGraphHelper barGraphHelper = new BarGraphHelper();
-        Mesh barGraphMesh = barGraphHelper.createBarGraph(
-            boundingMesh, cropDataInput, legendData, maxRadiation,
-            overallMaxRadiation);
+        Mesh barGraphMesh = barGraphHelper.createBarGraph2(
+            boundingMesh, cropDataInput, maxRadiation, overallMaxRadiation,
+            null, Config.BarGraphType.DLI.ToString());
         barGraphObject.setBarGraphMesh(barGraphMesh);
         boundingMesh.Append(barGraphMesh);
 
         return barGraphObject;
     }
 
-        private Mesh createLegendWithDescriptors(Mesh mesh, double minRadiation,
+    private Mesh createLegendWithDescriptors(Mesh mesh, double minRadiation,
         double maxRadiation, double overallMinRadiation,
         double overallMaxRadiation)
     {
         //add horizontal legend
         LegendHelper legendHelper = new LegendHelper();
         Mesh legendMesh = legendHelper.createLegend(mesh, false);
-
-        //Add legend descriptors
-        Mesh legendDescriptorMin = legendHelper.addLegendDescriptor(
-            Convert.ToString(Convert.ToInt32(overallMinRadiation)) + " Min/yr",
-                legendMesh.GetBoundingBox(true).Min.X,
-                legendMesh.GetBoundingBox(true).Min.Y - 1, .5);
-        Mesh legendDescriptorMax = legendHelper.addLegendDescriptor(
-            Convert.ToString(Convert.ToInt32(overallMaxRadiation)) + " Max/yr",
-                legendMesh.GetBoundingBox(true).Max.X,
-                legendMesh.GetBoundingBox(true).Min.Y - 1, .5);
-
-        legendMesh.Append(legendDescriptorMin);
-        legendMesh.Append(legendDescriptorMax);
-
 
         double legendWidth = legendMesh.GetBoundingBox(true).Max.X -
             legendMesh.GetBoundingBox(true).Min.X;
@@ -360,6 +343,31 @@ namespace Helianthus
         double maxXPos = percentageRadMax * legendWidth;
         double percentageRadMin = minRadiation / overallMaxRadiation;
         double minXPos = percentageRadMin * legendWidth;
+
+        Mesh minMonthMarker = meshHelper.create2dMesh(legendHeight,
+            (overallMaxRadiation / legendWidth) * .1);
+        minMonthMarker.Translate(new Vector3d(
+            legendMesh.GetBoundingBox(true).Min.X,
+            legendMesh.GetBoundingBox(true).Min.Y, 0));
+        minMonthMarker.Translate(new Vector3d(minXPos, 0, 0));
+
+        Mesh maxMonthMarker = meshHelper.create2dMesh(legendHeight,
+            (overallMaxRadiation / legendWidth) * .1);
+        maxMonthMarker.Translate(new Vector3d(
+            legendMesh.GetBoundingBox(true).Min.X,
+            legendMesh.GetBoundingBox(true).Min.Y, 0));
+        maxMonthMarker.Translate(new Vector3d(maxXPos, 0, 0));
+
+        //Add legend descriptors
+        Mesh legendDescriptorMin = legendHelper.addLegendDescriptor(
+            Convert.ToString(Convert.ToInt32(overallMinRadiation)) + " Min/yr",
+                legendMesh.GetBoundingBox(true).Min.X,
+                legendMesh.GetBoundingBox(true).Min.Y - .5, .5);
+        Mesh legendDescriptorMax = legendHelper.addLegendDescriptor(
+            Convert.ToString(Convert.ToInt32(overallMaxRadiation)) + " Max/yr",
+                legendMesh.GetBoundingBox(true).Max.X,
+                legendMesh.GetBoundingBox(true).Min.Y - .5, .5);
+
         if (minRadiation == maxRadiation)
         {
             Mesh legendDescriptorMonthlyMin = legendHelper.addLegendDescriptor(
@@ -375,11 +383,11 @@ namespace Helianthus
             Mesh legendDescriptorMonthlyMin = legendHelper.addLegendDescriptor(
                 Convert.ToString(Convert.ToInt32(minRadiation)) + " Min/mth",
                 legendMesh.GetBoundingBox(true).Min.X,
-                legendMesh.GetBoundingBox(true).Max.Y + 1, .5);
+                legendMesh.GetBoundingBox(true).Max.Y + 1.5, .5);
             Mesh legendDescriptorMonthlyMax = legendHelper.addLegendDescriptor(
                 Convert.ToString(Convert.ToInt32(maxRadiation)) + " Max/mth",
                 legendMesh.GetBoundingBox(true).Max.X,
-                legendMesh.GetBoundingBox(true).Max.Y + 1, .5);
+                legendMesh.GetBoundingBox(true).Max.Y + 1.5, .5);
 
             legendDescriptorMonthlyMin.Translate(new Vector3d(
                 minXPos, 0, 0));
@@ -389,26 +397,14 @@ namespace Helianthus
             legendMesh.Append(legendDescriptorMonthlyMax);
         }
 
-        Mesh minMonthMarker = meshHelper.create2dMesh(legendHeight,
-            (overallMaxRadiation / legendWidth) * .1);
-        minMonthMarker.Translate(new Vector3d(
-            legendMesh.GetBoundingBox(true).Min.X,
-            legendMesh.GetBoundingBox(true).Min.Y, 0));
-        minMonthMarker.Translate(new Vector3d(minXPos, 0, 0));
         legendMesh.Append(minMonthMarker);
-
-        Mesh maxMonthMarker = meshHelper.create2dMesh(legendHeight,
-            (overallMaxRadiation / legendWidth) * .1);
-        maxMonthMarker.Translate(new Vector3d(
-            legendMesh.GetBoundingBox(true).Min.X,
-            legendMesh.GetBoundingBox(true).Min.Y, 0));
-        maxMonthMarker.Translate(new Vector3d(maxXPos, 0, 0));
         legendMesh.Append(maxMonthMarker);
-
+        legendMesh.Append(legendDescriptorMin);
+        legendMesh.Append(legendDescriptorMax);
         return legendMesh;
     }
 
-        private List<string> populateDataTreeWithRecommendedCrops2(
+    private List<string> populateDataTreeWithRecommendedCrops2(
         List<CropDataObject> cropDataList, double maxRadiation)
     {
         List<string> cropList = new List<string>();
@@ -422,18 +418,14 @@ namespace Helianthus
         return cropList;
     }
 
-    private void incrementMeshPositionOnX(Mesh mesh,
-        double previousBoundingBoxX, int monthCount, Point3d centerpoint)
+    private void incrementMeshPosition(Mesh mesh,
+        Point3d previousBoundingBox, int monthCount)
     {
-        //todo should i allow input here?
         int diagramSpacer = 2;
-        double diagramXIncrement = (previousBoundingBoxX + diagramSpacer)
-            * monthCount;
-        Point3d centerPtMesh = mesh.GetBoundingBox(true).Center;
-        Vector3d translateVector = Point3d.Subtract(
-            centerpoint, centerPtMesh);
-        translateVector.X = translateVector.X + diagramXIncrement;
-            mesh.Translate(translateVector);
+        double diagramXIncrement = previousBoundingBox.X + diagramSpacer;
+        Point3d minPtMesh = mesh.GetBoundingBox(true).Min;    
+        Vector3d temp = new Vector3d(diagramXIncrement - minPtMesh.X, 0, 0);
+        if(monthCount != 0) { mesh.Translate(temp); }
     }
 
     /// <summary>

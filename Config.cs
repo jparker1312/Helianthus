@@ -5,6 +5,7 @@ namespace Helianthus
 {
 	public class Config
 	{
+        //COLORS
         public static Color BLACK_COLOR = Color.FromArgb(255, 0, 0, 0);
         public static Color WHITE_COLOR = Color.FromArgb(255, 255, 255, 255);
         public static Color GRAY_GREEN_COLOR = Color.FromArgb(100, 94, 113, 106);
@@ -51,6 +52,22 @@ namespace Helianthus
             Color.FromArgb(92, 0, 243),
             Color.FromArgb(126, 47, 255),
             Color.FromArgb(162, 106, 255)
+        };
+
+
+        //OTHER
+        public enum Months
+        {
+            January, February, March, April, May, June, July, August, September,
+            October, November, December
+        };
+
+        public enum BarGraphType
+        {
+            DLI,
+            YIELD,
+            A_LIGHT,
+            ENERGY
         };
     }
 }
