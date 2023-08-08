@@ -268,7 +268,7 @@ namespace Helianthus
         }
 
         public Mesh getTitleTextMesh(string text, Mesh inputMesh,
-            double textHeight, double offsetY)
+            double textHeight, double offsetY, bool wrapped)
         {
             //TODO make z depth adjustable
             DimensionStyle defaultDimensionStyle = new DimensionStyle();
@@ -280,7 +280,7 @@ namespace Helianthus
             Plane plane_cropDli = new Plane(center_point_crop, zaxis);
 
             TextEntity textEntityDliCount = TextEntity.Create(text,
-                plane_cropDli, defaultDimensionStyle, true,
+                plane_cropDli, defaultDimensionStyle, wrapped,
                 inputMesh.GetBoundingBox(true).Max.X -
                 inputMesh.GetBoundingBox(true).Min.X, 0);
 

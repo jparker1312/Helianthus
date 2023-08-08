@@ -51,7 +51,7 @@ namespace Helianthus
 
         public List<double> computeFinalRadiationList(
             IntersectionObject intersectionObject,
-            List<double> totalRadiationList)
+            List<double> totalRadiationList, double materialTransparency)
         {
             List<List<double>> finalIntersectionMatrix = new List<List<double>>();
             List<double> finalRadiationList = new List<double>();
@@ -74,11 +74,21 @@ namespace Helianthus
                     radiationResult += intersectionCalculationList[i3] * totalRadiationList[i3];
                 }
 
+                //Apply Material Transparency
+                radiationResult = applyMaterialTransparency(radiationResult,
+                    materialTransparency);
+
                 //convert to Dli
                 double dli = getDliFromX(radiationResult);
                 finalRadiationList.Add(dli);
             }
             return finalRadiationList;
+        }
+
+        private double applyMaterialTransparency(double radiationValue,
+            double materialTransparency)
+        {
+            return radiationValue * materialTransparency;
         }
 
         public List<double> getTotalRadiationList(
@@ -333,7 +343,7 @@ namespace Helianthus
 
     public List<double> getSimulationRadiationList(Mesh joinedMesh,
         List<Brep> geometryInput, List<Brep> contextGeometryInput,
-        List<double> genDayMtxTotalRadiationList)
+        List<double> genDayMtxTotalRadiationList, double materialTransparency)
     {
         //add offset distance for all points representing the faces of the
         //gridded mesh
@@ -355,7 +365,7 @@ namespace Helianthus
 
         //compute the results
         List<double> finalRadiationList = computeFinalRadiationList(
-            intersectionObject, genDayMtxTotalRadiationList);
+            intersectionObject, genDayMtxTotalRadiationList, materialTransparency);
 
         return finalRadiationList;
     }

@@ -92,8 +92,9 @@ namespace Helianthus
         //create gridded mesh from geometry
         Mesh joinedMesh = meshHelper.createGriddedMesh(geometryInput, gridSize);
 
-        List<double> finalRadiationList = simulationHelper.getSimulationRadiationList(joinedMesh,
-            geometryInput, contextGeometryInput, genDayMtxTotalRadiationList);
+        List<double> finalRadiationList = simulationHelper.
+            getSimulationRadiationList(joinedMesh, geometryInput,
+            contextGeometryInput, genDayMtxTotalRadiationList, 1);
         double maxRadiation = finalRadiationList.Max();
         double minRadiation = finalRadiationList.Min();
 

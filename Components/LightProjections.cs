@@ -8,11 +8,8 @@ using Rhino.Geometry;
 
 namespace Helianthus.Components
 {
-  public class YieldProjections : GH_Component
+  public class LightProjections : GH_Component
   {
-    private BarGraphHelper barGraphHelper;
-    private MeshHelper meshHelper;
-
     /// <summary>
     /// Each implementation of GH_Component must provide a public 
     /// constructor without any arguments.
@@ -20,21 +17,19 @@ namespace Helianthus.Components
     /// Subcategory the panel. If you use non-existing tab or panel names, 
     /// new tabs/panels will automatically be created.
     /// </summary>
-    public YieldProjections()
-      : base("Yield_Projections",
-             "YieldProjections",
-             "Yield Projections",
+    public LightProjections()
+      : base("Light_Projections",
+             "Light Projections",
+             "Light Projections",
              "Helianthus",
              "03 | Visualize Data")
     {
-        barGraphHelper = new BarGraphHelper();
-        meshHelper = new MeshHelper();
     }
 
     /// <summary>
     /// Registers all the input parameters for this component.
     /// </summary>
-    protected override void RegisterInputParams(GH_InputParamManager pManager)
+    protected override void RegisterInputParams(GH_Component.GH_InputParamManager pManager)
     {
         pManager.AddGenericParameter(
             "Tiled_Mesh_Obect",
@@ -44,10 +39,13 @@ namespace Helianthus.Components
         pManager.AddGenericParameter("CropsToVisualize", "Crops To Visualize",
             "List of Crops that you want to visualize", GH_ParamAccess.list);
         pManager.AddTextParameter(
-            "Crop_Projections",
-            "Crop Projections",
-            "Crop Projections",
-            GH_ParamAccess.tree);
+            "Selected_Crop",
+            "Selected Crop",
+            "Selected Crop",
+            GH_ParamAccess.item);
+        pManager.AddPointParameter("Diagram_Centerpoint", "Diagram_Centerpoint",
+            "Centerpoint for diagran", GH_ParamAccess.item);
+        pManager[3].Optional = true;
         pManager.AddBooleanParameter("Run_Simulation", "Run Simulation",
             "Run Simulation", GH_ParamAccess.item);
     }
@@ -55,7 +53,7 @@ namespace Helianthus.Components
     /// <summary>
     /// Registers all the output parameters for this component.
     /// </summary>
-    protected override void RegisterOutputParams(GH_OutputParamManager pManager)
+    protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
     {
         pManager.AddTextParameter("Out", "Out", "Input Parameters",
             GH_ParamAccess.list);
@@ -72,67 +70,66 @@ namespace Helianthus.Components
     {
         List<TiledMeshObject> tiledMeshObjects = new List<TiledMeshObject>();
         List<CropDataObject> cropData = new List<CropDataObject>();
-        Grasshopper.Kernel.Data.GH_Structure<GH_String> cropDataInput =
-            new Grasshopper.Kernel.Data.GH_Structure<GH_String>();
+        string selectedCrop = "";
+        Point3d diagramCenterpoint = new Point3d();
         bool run_Simulation = false;
 
         if (!DA.GetDataList(0, tiledMeshObjects)) { return; }
         if (!DA.GetDataList(1, cropData)) { return; }
-        if (!DA.GetDataTree(2, out cropDataInput)) { return; }
-        if (!DA.GetData(3, ref run_Simulation)) { return; }
+        if (!DA.GetData(2, ref selectedCrop)) { return; }
+        DA.GetData(3, ref diagramCenterpoint);
+        if (!DA.GetData(4, ref run_Simulation)) { return; }
 
-        if (!run_Simulation){ return; }
+        if (!run_Simulation) { return; }
+        if (selectedCrop == "") { return; }
 
-        //create bar graph of yields highlighting the selected crops for each
-        //month
-        List<List<string>> selectedCropsByMonth = new List<List<string>>();
-        for(int monthCount =0; monthCount < cropDataInput.Branches.Count;
-                monthCount++)
-        {
-            List<string> cropNames = new List<string>();
-            foreach (GH_String cropName in cropDataInput.Branches[monthCount])
-            {
-                cropNames.Add(cropName.ToString());
-            }
-            selectedCropsByMonth.Add(cropNames);
-        }
-
-        int maxOverallYield = 0;
-        foreach (CropDataObject cropDataObject in cropData)
-        {
-            if (cropDataObject.getMonthlyCropYield() > maxOverallYield)
-            {
-                maxOverallYield = Convert.ToInt32(cropDataObject.
-                    getMonthlyCropYield());
-            }
-        }
-
-        List<Mesh> finalMeshList = new List<Mesh>();
-        int monthlyCount = 0;
+        List<double> avgRadMonthList = new List<double>();
         foreach(TiledMeshObject tiledMeshObject in tiledMeshObjects)
         {
-            Mesh barGraphMesh = barGraphHelper.createBarGraph2(
-                tiledMeshObject.getBarGraphMesh().getBarGraphMesh(),
-                cropData, 0, maxOverallYield,
-                selectedCropsByMonth[monthlyCount],
-                Convert.ToString(Config.BarGraphType.YIELD));
-
-            Mesh yieldTitleText = meshHelper.getTitleTextMesh(
-                "Yield Projections (kg?)", barGraphMesh, 1, 2, true);
-                barGraphMesh.Append(yieldTitleText);
-
-            Mesh appendedMesh = tiledMeshObject.appendAllMeshes();
-            appendedMesh.Append(barGraphMesh);
-
-            //add bg plane
-            Mesh meshBase2dPlane = meshHelper.create2dBaseMesh(appendedMesh);
-            appendedMesh.Append(meshBase2dPlane);
-
-            finalMeshList.Add(appendedMesh);
-            monthlyCount++;
+            int radCount = 0;
+            double totalRadiation = 0;
+            foreach(double rad in tiledMeshObject.getRadiationList())
+            {
+                totalRadiation += rad;
+                radCount++;
+            }
+            avgRadMonthList.Add(totalRadiation / Convert.ToDouble(radCount));
         }
 
-        DA.SetDataList(0, cropDataInput);
+            CropDataObject selectedCropObject = null;
+        foreach(CropDataObject cropDataObject in cropData)
+        {
+            if (cropDataObject.getSpecie().Equals(selectedCrop))
+            {
+                selectedCropObject = cropDataObject;
+                break;
+            }
+        }
+
+        if(selectedCropObject == null)
+        {
+            AddRuntimeMessage(GH_RuntimeMessageLevel.Error,
+                "Input is not a valid crop: " + selectedCrop);
+        }
+
+        BarGraphHelper barGraphHelper = new BarGraphHelper();
+        Mesh barGraphMesh = barGraphHelper.createBarGraphMonth(
+                tiledMeshObjects[0].getBarGraphMesh().getBarGraphMesh(),
+                diagramCenterpoint, cropData, avgRadMonthList,
+                selectedCropObject.getDli(), selectedCrop,
+                Convert.ToString(Config.BarGraphType.A_LIGHT));
+
+        //add bg plane
+        MeshHelper meshHelper = new MeshHelper();
+        Mesh meshBase2dPlane = meshHelper.create2dBaseMesh(barGraphMesh);
+        barGraphMesh.Append(meshBase2dPlane);
+
+        List<Mesh> finalMeshList = new List<Mesh>
+        {
+            barGraphMesh
+        };
+
+        DA.SetDataList(0, new List<string>());
         DA.SetDataList(1, finalMeshList);
     }
 
@@ -157,7 +154,7 @@ namespace Helianthus.Components
     /// </summary>
     public override Guid ComponentGuid
     {
-      get { return new Guid("8a71e9f4-68e3-48b8-abee-36bff7840411"); }
+      get { return new Guid("c46085b3-876e-4541-b4f9-642918414207"); }
     }
   }
 }

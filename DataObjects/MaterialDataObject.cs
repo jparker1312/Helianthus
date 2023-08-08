@@ -11,14 +11,35 @@ namespace Helianthus
 		{
 		}
 
-		public string getMaterialName()
+        public MaterialDataObject(int id, string name,
+			double transparency)
         {
-            return this.material_name;
+			material_id = id;
+			material_name = name;
+			material_transparency = transparency;
+        }
+
+        public int getMaterialId()
+        {
+            return material_id;
+        }
+
+        public string getMaterialName()
+        {
+            return material_name;
         }
 
 		public double getMaterialTransparency()
 		{
-			return this.material_transparency;
+			return material_transparency;
+		}
+
+		public string printMaterial()
+		{
+			return "Material ID: " + Convert.ToString(this.material_id) +
+				", Material Name: " + material_name +
+				", Material Transparency: " +
+				Convert.ToString(material_transparency);
 		}
 	}
 }

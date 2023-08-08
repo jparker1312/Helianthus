@@ -68,6 +68,9 @@ namespace Helianthus
         pManager.AddGenericParameter("LegendParameters", "Legend Parameters",
             "Legend Parameters for the visualization", GH_ParamAccess.item);
         pManager[9].Optional = true;
+        pManager.AddGenericParameter("Material_Transparency", "Material Transparency",
+            "Material Transparency", GH_ParamAccess.item);
+        pManager[10].Optional = true;
         pManager.AddBooleanParameter("Run_Simulation", "Run Simulation",
             "Run Simulation", GH_ParamAccess.item);
     }
@@ -108,6 +111,7 @@ namespace Helianthus
         List<string> simulation_monthRange = new List<string>();
         List<CropDataObject> cropDataInput = new List<CropDataObject>();
         LegendDataObject legendData = new LegendDataObject();
+        MaterialDataObject materialDataObject = new MaterialDataObject();
         bool run_Simulation = true;
 
         if (!DA.GetData(0, ref weaFileLocation)) { return; }
@@ -120,7 +124,8 @@ namespace Helianthus
         DA.GetDataList(7, simulation_monthRange);
         if (!DA.GetDataList(8, cropDataInput)) { return; }
         DA.GetData(9, ref legendData);
-        if (!DA.GetData(10, ref run_Simulation)) { return; }
+        DA.GetData(10, ref materialDataObject);
+        if (!DA.GetData(11, ref run_Simulation)) { return; }
 
         if (!run_Simulation){ return; }
 
@@ -156,7 +161,8 @@ namespace Helianthus
         {
             List<double> finalRadiationList = simulationHelper.
                 getSimulationRadiationList(joinedMesh, geometryInputList,
-                    contextGeometryInput, radiationList);
+                    contextGeometryInput, radiationList,
+                    materialDataObject.getMaterialTransparency());
 
             double maxRadiation = finalRadiationList.Max();
             double minRadiation = finalRadiationList.Min();
@@ -215,8 +221,8 @@ namespace Helianthus
             //add month name
             //todo change width calculation
             Mesh monthTitleMesh = meshHelper.getTitleTextMesh(
-                Convert.ToString((Config.Months)monthCount), tempAppendedMeshTiled,
-                2, 4);
+                Convert.ToString((Config.Months)monthCount),
+                tempAppendedMeshTiled, 2, 4, true);
             tiledMeshObject.setMonthTitleMesh(monthTitleMesh);
             tempAppendedMeshTiled.Append(monthTitleMesh);
 
@@ -294,7 +300,7 @@ namespace Helianthus
 
         //add section header for tiled surface //todo make this more during the beginning
         Mesh surfaceDliTitleMesh = meshHelper.getTitleTextMesh(
-            "Surface DLI", monthlyFinalMesh, 1, 4);
+            "Surface DLI", monthlyFinalMesh, 1, 4, true);
         tiledMeshObject.setTitleMesh(surfaceDliTitleMesh);
         tempAppendedMeshTiled.Append(surfaceDliTitleMesh);
     }
