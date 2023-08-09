@@ -2,16 +2,9 @@
 using System.Collections.Generic;
 using System.Drawing;
 
-using Grasshopper;
 using Grasshopper.Kernel;
-using Grasshopper.Kernel.Types;
-using Rhino;
 using Rhino.DocObjects;
 using Rhino.Geometry;
-using Rhino.Input.Custom;
-using Rhino.Render;
-using Rhino.UI;
-using static Rhino.Render.TextureGraphInfo;
 
 namespace Helianthus
 {
@@ -67,7 +60,7 @@ namespace Helianthus
     {
         List<CropDataObject> cropDataInput = new List<CropDataObject>();
         Brep geometryInput = new Brep();
-        LegendDataObject legendData = new LegendDataObject();
+        VisualizationDataObject legendData = new VisualizationDataObject();
         double avgSurfaceDLI = double.NaN;
 
         if (!DA.GetDataList(0, cropDataInput)) { return; }

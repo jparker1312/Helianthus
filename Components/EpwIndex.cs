@@ -22,7 +22,7 @@ namespace Helianthus
              "EPW Index",
              "EPW Index currently using sensor readings based on Singapore study.",
              "Helianthus",
-             "01 | Import")
+             "01 | Import Data")
     {
     }
 

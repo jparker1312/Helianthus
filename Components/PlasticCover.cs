@@ -1,13 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
-
-using Grasshopper;
 using Grasshopper.Kernel;
-using Rhino.Geometry;
 
-namespace Helianthus.Components
+namespace Helianthus
 {
-  public class PlasticMaterial : GH_Component
+  public class PlasticCover : GH_Component
   {
     /// <summary>
     /// Each implementation of GH_Component must provide a public 
@@ -16,37 +13,59 @@ namespace Helianthus.Components
     /// Subcategory the panel. If you use non-existing tab or panel names, 
     /// new tabs/panels will automatically be created.
     /// </summary>
-    public PlasticMaterial()
-      : base("Plastic_Material",
-             "Plastic Material",
-             "Using default plastic material transparency",
+    public PlasticCover()
+      : base("Plastic_Cover",
+             "Plastic Cover",
+             "Selection of plastic types for inclusion of material " +
+             "transmittance in simulations.",
              "Helianthus",
-             "01 | Import")
+             "01 | Import Data")
     {
     }
 
     /// <summary>
     /// Registers all the input parameters for this component.
     /// </summary>
-    protected override void RegisterInputParams(GH_Component.GH_InputParamManager pManager)
+    protected override void RegisterInputParams(GH_InputParamManager pManager)
     {
         pManager.AddIntegerParameter("Plastic_Type", "Plastic Type",
-            "Plastic Type", GH_ParamAccess.item, 1);
+            "An integer representing the selected plastic type." +
+            "Plastic Type 0 : 3D-Printed Polylactic Acid (PLA) with 70% transmittance; " +
+            "Plastic Type 1 : Polymer Photovoltaics (PV) with 70% transmittance;" +
+            "Plastic Type 2 : 3D-Printed Upcycled PET Bottles with " +
+            "65% transmittance. " +
+            "If unspecified, defaults to 0.",
+            GH_ParamAccess.item,
+            0);
+            pManager[0].Optional = true;
     }
 
     /// <summary>
     /// Registers all the output parameters for this component.
     /// </summary>
-    protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
+    protected override void RegisterOutputParams(GH_OutputParamManager pManager)
     {
-        pManager.AddTextParameter("Out", "Out", "Input Parameters",
+        pManager.AddTextParameter(
+            "Out",
+            "Out",
+            "Outputs the input parameters",
             GH_ParamAccess.list);
-        pManager.AddGenericParameter("Selected_Material", "Selected Material",
-            "Selected Material", GH_ParamAccess.item);
-        pManager.AddNumberParameter("Transparency Value", "Transparency Value",
-            "Transparency Value", GH_ParamAccess.item);
-        pManager.AddTextParameter("Available_Plastic_Types",
-            "Available Plastic Types", "Available Plastic Types",
+        pManager.AddGenericParameter(
+            "Cover_Material",
+            "Cover Material",
+            "Selected Cover Material with its transmittance value",
+            GH_ParamAccess.item);
+        pManager.AddNumberParameter(
+            "Transmittance Value",
+            "Transmittance Value",
+            "Transmittance Value of the selected cover matterial. " +
+            "The transmittance is the fraction of incident light that passes " +
+            "through a material.",
+            GH_ParamAccess.item);
+        pManager.AddTextParameter(
+            "Available_Plastic_Types",
+            "Available Plastic Types",
+            "Available Glass Types with IDs, names, and transmittance values",
             GH_ParamAccess.list);
     }
 
@@ -58,11 +77,9 @@ namespace Helianthus.Components
     protected override void SolveInstance(IGH_DataAccess DA)
     {
         int inputOption = 0;
-
-        if (!DA.GetData(0, ref inputOption)) { return; }
+        DA.GetData(0, ref inputOption);
 
         MaterialDataObject materialDataObject = null;
-
         foreach (MaterialDataObject mdo in
             MaterialConfig.plasticMaterialDataObjects)
         {

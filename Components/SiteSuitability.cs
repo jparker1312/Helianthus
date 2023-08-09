@@ -24,8 +24,11 @@ namespace Helianthus
     public SiteSuitability()
       : base("Site_Suitability",
              "Site Suitability",
-             "Visualize photosynthetic sunlight levels on surfaces to " +
-             "determine best locations for crop placement",
+             "Visualize Daily Light Integral (DLI) of photosynthetic " +
+             "sunlight levels on surfaces to determine best locations for " +
+             "crop placement. DLI is defined as the total amount of " +
+             "photosynthetically active radiation that impacts a square " +
+             "meter over 24 hrs",
              "Helianthus",
              "02 | Analyze Data")
     {
@@ -39,18 +42,42 @@ namespace Helianthus
     /// </summary>
     protected override void RegisterInputParams(GH_InputParamManager pManager)
     {
-        pManager.AddGenericParameter("WEA_File", "WEA File",
-        "File location for .wea file", GH_ParamAccess.item);
-        pManager.AddGeometryParameter("SurfaceGeometry", "Surface Geometry",
-            "Rhino Surfaces or Rhino Meshes", GH_ParamAccess.list);
-        pManager.AddGeometryParameter("ContextGeometry", "Context Geometry",
-            "Rhino Surfaces or Rhino Meshes", GH_ParamAccess.list);
+        pManager.AddGenericParameter(
+            "WEA_File",
+            "WEA File",
+            "File path for .wea file. WEA files contain Daysim weather" +
+            " format with the sunlight climate data specifically to support " +
+            "building simulations. As such, the files are Typical " +
+            "Meteorological Years (TMY) published by a variety of " +
+            "organizations. The repository of climate data files can be " +
+            "found on climate.onebuilding.org",
+            GH_ParamAccess.item);
+        pManager.AddGeometryParameter(
+            "Analysis_Geometry",
+            "Analysis Geometry",
+            "Rhino Surfaces or Rhino Meshes to analyze",
+            GH_ParamAccess.list);
+        pManager.AddGeometryParameter(
+            "Context_Geometry",
+            "Context Geometry",
+            "Optional. Rhino Surfaces or Rhino Meshes that can block " +
+            "sunlight from reaching the analysis geometry",
+            GH_ParamAccess.list);
         pManager[2].Optional = true;
-        pManager.AddNumberParameter("GridSize", "Grid Size",
-            "Grid Size for output geometry", GH_ParamAccess.item, 1.0);
+        pManager.AddNumberParameter(
+            "Grid_Size",
+            "Grid Size",
+            "Optional. Grid Size for output geometry. Default grid size " +
+            "corresponds to 1 square meter which is the unit used for " +
+            "monthly calculations.",
+            GH_ParamAccess.item,
+            1.0);
         pManager[3].Optional = true;
-        pManager.AddBooleanParameter("Run_Simulation", "Run Simulation",
-            "Run Simulation", GH_ParamAccess.item);
+        pManager.AddBooleanParameter(
+            "Run_Simulation",
+            "Run Simulation",
+            "Set to 'true' to run the simulation",
+            GH_ParamAccess.item);
     }
 
     /// <summary>
@@ -58,11 +85,22 @@ namespace Helianthus
     /// </summary>
     protected override void RegisterOutputParams(GH_OutputParamManager pManager)
     {
-        pManager.AddTextParameter("Out", "Out", "Input Parameters",
+        pManager.AddTextParameter(
+            "Out",
+            "Out",
+            "Outputs the input parameters",
             GH_ParamAccess.list);
-        pManager.AddNumberParameter("Radiation_List", "Radiation List",
-            "Radiation List", GH_ParamAccess.list);
-        pManager.AddMeshParameter("Mesh", "Mesh", "Mesh viz",
+        pManager.AddNumberParameter(
+            "DLI_List",
+            "DLI List",
+            "Daily Light Integral (DLI) List containing values for each tile"  +
+            "on the list of gridded meshes",
+            GH_ParamAccess.list);
+        pManager.AddMeshParameter(
+            "Mesh",
+            "Mesh",
+            "A colored mesh of the analysis geometry showing gridded DLI " +
+            "values",
             GH_ParamAccess.list);
     }
 
@@ -74,13 +112,13 @@ namespace Helianthus
     protected override void SolveInstance(IGH_DataAccess DA)
     {
         string weaFileLocation = "";
-        List<Brep> geometryInput = new List<Brep>();
+        List<Brep> analysisGeometryInput = new List<Brep>();
         List<Brep> contextGeometryInput = new List<Brep>();
         double gridSize = 1.0;
-        bool run_Simulation = true;
+        bool run_Simulation = false;
 
         if (!DA.GetData(0, ref weaFileLocation)) { return; }
-        if (!DA.GetDataList(1, geometryInput)) { return; }
+        if (!DA.GetDataList(1, analysisGeometryInput)) { return; }
         DA.GetDataList(2, contextGeometryInput);
         DA.GetData(3, ref gridSize);
         if (!DA.GetData(4, ref run_Simulation)) { return; }
@@ -90,10 +128,10 @@ namespace Helianthus
             getGenDayMtxTotalRadiation(weaFileLocation);
 
         //create gridded mesh from geometry
-        Mesh joinedMesh = meshHelper.createGriddedMesh(geometryInput, gridSize);
+        Mesh joinedMesh = meshHelper.createGriddedMesh(analysisGeometryInput, gridSize);
 
         List<double> finalRadiationList = simulationHelper.
-            getSimulationRadiationList(joinedMesh, geometryInput,
+            getSimulationRadiationList(joinedMesh, analysisGeometryInput,
             contextGeometryInput, genDayMtxTotalRadiationList, 1);
         double maxRadiation = finalRadiationList.Max();
         double minRadiation = finalRadiationList.Min();
@@ -117,7 +155,7 @@ namespace Helianthus
         List<string> inputParams = new List<string>
         {
             weaFileLocation,
-            geometryInput.ToString(),
+            analysisGeometryInput.ToString(),
             contextGeometryInput.ToString(),
             gridSize.ToString()
         };
@@ -133,19 +171,26 @@ namespace Helianthus
         //Create Legend
         LegendHelper legendHelper = new LegendHelper();
         Mesh legendMesh = legendHelper.createLegend(mesh, true);
+        legendMesh.Translate(new Vector3d(2, 0, 0));
 
+        double area = legendMesh.GetBoundingBox(true).Area;
+        double textSize = 1;
+        for(int count = 1000; count < area; count += 1000){ textSize++; }
+
+        double rectWidth = legendMesh.GetBoundingBox(true).Max.X -
+                legendMesh.GetBoundingBox(true).Min.X + 3;
+        
         //Add legend descriptors
         Mesh legendDescriptorMin = legendHelper.addLegendDescriptor(
             Convert.ToString(Convert.ToInt32(minRadiation)) + " DLI",
             legendMesh.GetBoundingBox(true).Max.X + 1,
-            legendMesh.GetBoundingBox(true).Min.Y, 1);
+            legendMesh.GetBoundingBox(true).Min.Y, textSize, rectWidth);
         Mesh legendDescriptorMax = legendHelper.addLegendDescriptor(
             Convert.ToString(Convert.ToInt32(maxRadiation)) + " DLI",
             legendMesh.GetBoundingBox(true).Max.X + 1,
-            legendMesh.GetBoundingBox(true).Max.Y, 1);
+            legendMesh.GetBoundingBox(true).Max.Y, textSize, rectWidth);
         legendMesh.Append(legendDescriptorMin);
         legendMesh.Append(legendDescriptorMax);
-
         return legendMesh;  
     }
 

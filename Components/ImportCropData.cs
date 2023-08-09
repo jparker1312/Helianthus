@@ -3,9 +3,7 @@ using System.Drawing;
 using System.IO;
 using System.Collections.Generic;
 
-using Grasshopper;
 using Grasshopper.Kernel;
-using Rhino.Geometry;
 using System.Linq;
 
 namespace Helianthus
@@ -20,30 +18,39 @@ namespace Helianthus
     /// new tabs/panels will automatically be created.
     /// </summary>
     public CropsList()
-      : base("ImportCropData",
+      : base("Import_Crop_Data",
              "Import Crop Data",
-             "Create List<> of Crop Data from a CSV file",
+             "Creates a list of crop data from a CSV file saved in your local " +
+             "file system.",
              "Helianthus",
-             "01 | Import")
+             "01 | Import Data")
     {
     }
 
     /// <summary>
     /// Registers all the input parameters for this component.
     /// </summary>
-    protected override void RegisterInputParams(GH_Component.GH_InputParamManager pManager)
+    protected override void RegisterInputParams(GH_InputParamManager pManager)
     {
-        pManager.AddTextParameter("CropDataCSV", "Crop Data CSV",
-            "CSV of Crop Data", GH_ParamAccess.item);
+        pManager.AddTextParameter(
+            "Crop_Data_CSV",
+            "Crop Data CSV",
+            "The crop data csv can be downloaded from _____. " +
+            "The .csv contains each crop id, type, specie, scientific name, " +
+            "dli, dli classification, yearly yields, and monthly yields.",
+            GH_ParamAccess.item);
     }
 
     /// <summary>
     /// Registers all the output parameters for this component.
     /// </summary>
-    protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
+    protected override void RegisterOutputParams(GH_OutputParamManager pManager)
     {
-        pManager.AddGenericParameter("CropDataList", "Crop Data List",
-            "List of crops from the Helianthus Database", GH_ParamAccess.list);
+        pManager.AddGenericParameter(
+            "Crop_Data",
+            "Crop Data",
+            "Contains a list of crop data to analyze and support simulations.",
+            GH_ParamAccess.list);
     }
 
     /// <summary>
@@ -53,8 +60,7 @@ namespace Helianthus
     /// to store data in output parameters.</param>
     protected override void SolveInstance(IGH_DataAccess DA)
     {
-        String cropDataFile = null;
-
+        string cropDataFile = null;
         if (!DA.GetData(0, ref cropDataFile)) { return; }
         if (cropDataFile == null) { return; }
         if (cropDataFile == "") { return; }

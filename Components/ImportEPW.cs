@@ -24,7 +24,7 @@ namespace Helianthus
             "Import EPW Data",
              "Import Radiation Data from EPW file",
              "Helianthus",
-             "01 | Import")
+             "01 | Import Data")
     {
     }
 

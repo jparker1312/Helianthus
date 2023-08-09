@@ -4,9 +4,9 @@ using System.Drawing;
 
 using Grasshopper.Kernel;
 
-namespace Helianthus.Components
+namespace Helianthus
 {
-  public class GlassMaterial : GH_Component
+  public class GlassCover : GH_Component
   {
     /// <summary>
     /// Each implementation of GH_Component must provide a public 
@@ -15,37 +15,62 @@ namespace Helianthus.Components
     /// Subcategory the panel. If you use non-existing tab or panel names, 
     /// new tabs/panels will automatically be created.
     /// </summary>
-    public GlassMaterial()
-      : base("Glass_Material",
-             "Glass Material",
-             "Using default glass material transparency",
+    public GlassCover()
+      : base("Glass_Cover",
+             "Glass Cover",
+             "Selection of glass types for inclusion of material " +
+             "transmittance in simulations.",
              "Helianthus",
-             "01 | Import")
+             "01 | Import Data")
     {
     }
 
     /// <summary>
     /// Registers all the input parameters for this component.
     /// </summary>
-    protected override void RegisterInputParams(GH_Component.GH_InputParamManager pManager)
+    protected override void RegisterInputParams(GH_InputParamManager pManager)
     {
-        pManager.AddIntegerParameter("Glass_Type", "Glass Type",
-            "Glass Type", GH_ParamAccess.item, 1);
-    }
+        pManager.AddIntegerParameter(
+            "Glass_Type",
+            "Glass Type",
+            "An integer representing the selected glass type." +
+            "Glass Type 0 : Low-Iron Glass with 92% transmittance; " +
+            "Glass Type 1 : Float Glass with 84% transmittance;" +
+            "Glass Type 2 : Highly Selective Double-Glazed Unit (DGU) with " +
+            "65% transmittance. " +
+            "If unspecified, defaults to 0.",
+            GH_ParamAccess.item,
+            0);
+            pManager[0].Optional = true;
+        }
 
     /// <summary>
     /// Registers all the output parameters for this component.
     /// </summary>
-    protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
+    protected override void RegisterOutputParams(GH_OutputParamManager pManager)
     {
-        pManager.AddTextParameter("Out", "Out", "Input Parameters",
+        pManager.AddTextParameter(
+            "Out",
+            "Out",
+            "Outputs the input parameters",
             GH_ParamAccess.list);
-        pManager.AddGenericParameter("Selected_Material", "Selected Material",
-            "Selected Material", GH_ParamAccess.item);
-        pManager.AddNumberParameter("Transparency Value", "Transparency Value",
-            "Transparency Value", GH_ParamAccess.item);
-        pManager.AddTextParameter("Available_Glass_Types",
-            "Available Glass Types", "Available Glass Types",
+        pManager.AddGenericParameter(
+            "Cover_Material",
+            "Cover Material",
+            "Selected Cover Material with its transmittance value",
+            GH_ParamAccess.item);
+        pManager.AddNumberParameter(
+            "Transmittance Value",
+            "Transmittance Value",
+            "Transmittance Value of the selected cover matterial. " +
+            "The transmittance is the fraction of incident light that passes " +
+            "through a material.",
+            GH_ParamAccess.item);
+        pManager.AddTextParameter(
+            "Available_Glass_Types",
+            "Available Glass Types",
+            "Available Glass Types with IDs, names, " +
+            "and transmittance values",
             GH_ParamAccess.list);
     }
 
@@ -57,11 +82,9 @@ namespace Helianthus.Components
     protected override void SolveInstance(IGH_DataAccess DA)
     {
         int inputOption = 0;
-
-        if (!DA.GetData(0, ref inputOption)) { return; }
+        DA.GetData(0, ref inputOption);
 
         MaterialDataObject materialDataObject = null;
-
         foreach(MaterialDataObject mdo in
             MaterialConfig.glassMaterialDataObjects)
         {

@@ -10,7 +10,7 @@ using Rhino.Geometry;
 namespace Helianthus
 {
 
-  public class SurfaceCropSuitability : GH_Component
+  public class CropSuitability : GH_Component
   {
     private MeshHelper meshHelper;
     private SimulationHelper simulationHelper;
@@ -22,11 +22,12 @@ namespace Helianthus
     /// Subcategory the panel. If you use non-existing tab or panel names, 
     /// new tabs/panels will automatically be created.
     /// </summary>
-    public SurfaceCropSuitability()
-      : base("Surface_Crop_Suitability",
-             "Surface Crop Suitability",
-             "Returns a monthly analysis of a surface and recommends " +
-             "suitable crops to grow",
+    public CropSuitability()
+      : base("Crop_Suitability",
+             "Crop Suitability",
+             "Calculates the suitable crops for the selected surface on a " +
+             "monthly basis according to the crop DLI requirements and " +
+             "the simulated sunlight DLI reaching the surface.",
              "Helianthus",
              "02 | Analyze Data")
     {
@@ -39,40 +40,68 @@ namespace Helianthus
     /// </summary>
     protected override void RegisterInputParams(GH_InputParamManager pManager)
     {
-        pManager.AddGenericParameter("WEA_File", "WEA File",
-        "File location for .wea file", GH_ParamAccess.item);
-        pManager.AddGeometryParameter("SurfaceGeometry", "Surface Geometry",
-            "Rhino Surface", GH_ParamAccess.item);
-        pManager.AddGeometryParameter("ContextGeometry", "Context Geometry",
-            "Rhino Surfaces or Rhino Meshes", GH_ParamAccess.list);
-        pManager[2].Optional = true;
-        pManager.AddPointParameter("Diagram_Centerpoint", "Diagram_Centerpoint",
-            "Centerpoint for diagran", GH_ParamAccess.item);
-        pManager[3].Optional = true;
-        pManager.AddVectorParameter("Diagram_Rotation_Axis", "Diagram Rotation Axis",
-            "Diagram Rotation Axis - to help orient planes to top-view",
+        pManager.AddGenericParameter(
+            "Crop_Data",
+            "Crop Data",
+            "Imported crop data to contrast with surface specifications, " +
+            "obtained from the Import_Crop_Data component. ",
+            GH_ParamAccess.list);
+        pManager.AddGenericParameter(
+            "WEA_File",
+            "WEA File",
+            "File path for .wea file. WEA files contain Daysim weather " +
+            "format with the sunlight climate data specifically to support " +
+            "building simulations. As such, the files are Typical " +
+            "Meteorological Years (TMY) published by a variety of " +
+            "organizations. The repository of climate data files can be " +
+            "found on climate.onebuilding.org",
             GH_ParamAccess.item);
+        pManager.AddTextParameter(
+            "Monthly_WEA_Files_Folder",
+            "Monthly WEA Files Folder",
+            "Folder path for saving generated monthly WEA files.",
+            GH_ParamAccess.item);
+        pManager.AddGeometryParameter(
+            "Analysis_Geometry",
+            "Analysis Geometry",
+            "Takes one Rhino Surface or Rhino Mesh to analyze",
+            GH_ParamAccess.item);
+        pManager.AddGeometryParameter(
+            "Context_Geometry",
+            "Context Geometry",
+            "Optional. Rhino Surfaces or Rhino Meshes that can block sunlight from " +
+            "reaching the analysis geometry",
+            GH_ParamAccess.list);
         pManager[4].Optional = true;
-        pManager.AddNumberParameter("Diagram_Rotation", "Diagram Rotation",
-            "Diagram Rotation - to help orient planes to top-view",
-            GH_ParamAccess.item);
+        pManager.AddTextParameter(
+            "Simulation_Period",
+            "Simulation Period",
+            "Optional. A simulation period containing a list of months for " +
+            "computation to run. Note that the simulation works on a monhtly " +
+            "basis. To add the months, it is required input a panel with the " +
+            "'multiline data' option unchecked. If unspecified, the " +
+            "simulation will run for all 12 months.",
+            GH_ParamAccess.list);
         pManager[5].Optional = true;
-        pManager.AddTextParameter("Location_For_Monthly_WEA_Files",
-        "Location For Monthly WEA Files",
-        "Location For Monthly WEA Files", GH_ParamAccess.item);
-        pManager.AddTextParameter("Month_Range","Month Range",
-            "List of Months for computation to run", GH_ParamAccess.list);
+        pManager.AddGenericParameter(
+            "Cover_Material",
+            "Cover_Material",
+            "Optional. The selected cover material with its light " +
+            "transmittance value, Various material types can be found under " +
+            "the Glass_Cover and Plastic_Cover components.",
+            GH_ParamAccess.item);
+        pManager[6].Optional = true;
+        pManager.AddGenericParameter(
+            "Visualization_Parameters",
+            "Visualization Parameters",
+            "Visualization parameters for legends and diagrams.",
+            GH_ParamAccess.item);
         pManager[7].Optional = true;
-        pManager.AddGenericParameter("CropsToVisualize", "Crops To Visualize",
-            "List of Crops that you want to visualize", GH_ParamAccess.list);
-        pManager.AddGenericParameter("LegendParameters", "Legend Parameters",
-            "Legend Parameters for the visualization", GH_ParamAccess.item);
-        pManager[9].Optional = true;
-        pManager.AddGenericParameter("Material_Transparency", "Material Transparency",
-            "Material Transparency", GH_ParamAccess.item);
-        pManager[10].Optional = true;
-        pManager.AddBooleanParameter("Run_Simulation", "Run Simulation",
-            "Run Simulation", GH_ParamAccess.item);
+        pManager.AddBooleanParameter(
+            "Run_Simulation",
+            "Run Simulation",
+            "Run Simulation",
+            GH_ParamAccess.item);
     }
 
     /// <summary>
@@ -80,18 +109,34 @@ namespace Helianthus
     /// </summary>
     protected override void RegisterOutputParams(GH_OutputParamManager pManager)
     {
-        pManager.AddTextParameter("Out", "Out", "Input Parameters",
+        pManager.AddTextParameter(
+            "Out",
+            "Out",
+            "Outputs the input parameters",
             GH_ParamAccess.list);
-        pManager.AddNumberParameter("Radiation_List_By_Month",
-            "Radiation List By Month", "Radiation List By Month",
+        pManager.AddNumberParameter(
+            "Monthly_Surface_DLIs",
+            "Monthly Surface DLIs",
+            "Outputs the total list of surface DLIs for the selected " +
+            "surface and simulation period.",
             GH_ParamAccess.tree);
-        pManager.AddTextParameter("Crop_Recommendations_By_Month",
-            "Crop Recommendations By Month", "Crop Recommendations By Month",
+        pManager.AddTextParameter(
+            "Monthly_Crop_Recommendations",
+            "Monthly Crop Recommendations",
+            "Outputs the total list of suitable crops for the selected " +
+            "surface and simulation period.",
             GH_ParamAccess.tree);
-        pManager.AddGenericParameter("Tiled_Mesh_Object",
-            "Tiled Mesh Object", "Tiled Mesh Object", GH_ParamAccess.list);
-        pManager.AddMeshParameter("Mesh",
-            "Mesh", "Mesh", GH_ParamAccess.list);
+        pManager.AddGenericParameter(
+            "Tiled_Mesh_Object",
+            "Tiled Mesh Object",
+            "Unifies all meshes into one object for subsequent visualizations.",
+            GH_ParamAccess.list);
+        pManager.AddMeshParameter(
+            "Mesh",
+            "Mesh",
+            "A monthly list of a colored mesh of the analysis geometry " +
+            "showing gridded DLIs and a suitable crops bar graph.",
+            GH_ParamAccess.list);
     }
 
     /// <summary>
@@ -101,31 +146,27 @@ namespace Helianthus
     /// to store data in output parameters.</param>
     protected override void SolveInstance(IGH_DataAccess DA)
     {
-        string weaFileLocation = "";
-        Brep geometryInput = new Brep();
-        List<Brep> contextGeometryInput = new List<Brep>();
-        Point3d diagramCenterpoint = new Point3d();
-        Vector3d diagramRotationAxis = new Vector3d();
-        double diagramRotation = 0;
-        string pathname_MonthlyWeaFiles = "";
-        List<string> simulation_monthRange = new List<string>();
+        //REQ
         List<CropDataObject> cropDataInput = new List<CropDataObject>();
-        LegendDataObject legendData = new LegendDataObject();
+        string weaFileLocation = "";
+        string pathname_MonthlyWeaFiles = "";
+        Brep geometryInput = new Brep();
+        bool run_Simulation = false;
+        //OPT
+        List<Brep> contextGeometryInput = new List<Brep>();
+        List<string> simulation_monthRange = new List<string>();
         MaterialDataObject materialDataObject = new MaterialDataObject();
-        bool run_Simulation = true;
+        VisualizationDataObject visualizationParams = new VisualizationDataObject();
 
-        if (!DA.GetData(0, ref weaFileLocation)) { return; }
-        if (!DA.GetData(1, ref geometryInput)) { return; }
-        DA.GetDataList(2, contextGeometryInput);
-        DA.GetData(3, ref diagramCenterpoint);
-        DA.GetData(4, ref diagramRotationAxis);
-        DA.GetData(5, ref diagramRotation);
-        if (!DA.GetData(6, ref pathname_MonthlyWeaFiles)) { return; }
-        DA.GetDataList(7, simulation_monthRange);
-        if (!DA.GetDataList(8, cropDataInput)) { return; }
-        DA.GetData(9, ref legendData);
-        DA.GetData(10, ref materialDataObject);
-        if (!DA.GetData(11, ref run_Simulation)) { return; }
+        if (!DA.GetDataList(0, cropDataInput)) { return; }
+        if (!DA.GetData(1, ref weaFileLocation)) { return; }
+        if (!DA.GetData(2, ref pathname_MonthlyWeaFiles)) { return; }
+        if (!DA.GetData(3, ref geometryInput)) { return; }
+        DA.GetDataList(4, contextGeometryInput);
+        DA.GetDataList(5, simulation_monthRange);
+        DA.GetData(6, ref materialDataObject);
+        DA.GetData(7, ref visualizationParams);
+        if (!DA.GetData(8, ref run_Simulation)) { return; }
 
         if (!run_Simulation){ return; }
 
@@ -207,19 +248,17 @@ namespace Helianthus
 
             //color mesh tiles
             createTiledMeshSection(tiledMeshObject, monthlyFinalMesh,
-                overallMaxRadiation, overallMinRadiation, diagramRotation,
-                diagramRotationAxis, previousBoundingBoxX, monthCount,
-                diagramCenterpoint, tempAppendedMeshTiled);
+                overallMaxRadiation, overallMinRadiation, previousBoundingBoxX,
+                monthCount, tempAppendedMeshTiled, visualizationParams);
 
             //create bar graph
             double maxRadiation = tiledMeshObject.getRadiationList().Max();
             BarGraphObject barGraphObject = createBarGraphSection(
-                tempAppendedMeshTiled, cropDataInput, legendData, maxRadiation,
+                tempAppendedMeshTiled, cropDataInput, visualizationParams, maxRadiation,
                 overallMaxRadiation);
             tiledMeshObject.setBarGraphObject(barGraphObject);
 
             //add month name
-            //todo change width calculation
             Mesh monthTitleMesh = meshHelper.getTitleTextMesh(
                 Convert.ToString((Config.Months)monthCount),
                 tempAppendedMeshTiled, 2, 4, true);
@@ -244,13 +283,10 @@ namespace Helianthus
             weaFileLocation,
             geometryInput.ToString(),
             contextGeometryInput.ToString(),
-            diagramCenterpoint.ToString(),
-            diagramRotationAxis.ToString(),
-            diagramRotation.ToString(),
             pathname_MonthlyWeaFiles,
             simulation_monthRange.ToString(),
             cropDataInput.ToString(),
-            legendData.ToString(),
+            visualizationParams.ToString(),
         };
 
         DA.SetDataList(0, inputParams);
@@ -262,9 +298,8 @@ namespace Helianthus
 
     private void createTiledMeshSection(TiledMeshObject tiledMeshObject,
         Mesh monthlyFinalMesh, double overallMaxRadiation,
-        double overallMinRadiation, double diagramRotation,
-        Vector3d diagramRotationAxis, Point3d previousBoundingBox,
-        int monthCount, Point3d diagramCenterpoint, Mesh tempAppendedMeshTiled)
+        double overallMinRadiation, Point3d previousBoundingBox, int monthCount,
+        Mesh tempAppendedMeshTiled, VisualizationDataObject visualizationParams)
     {
         //color the mesh
         List<Color> faceColors = meshHelper.getFaceColors(
@@ -273,12 +308,13 @@ namespace Helianthus
             faceColors);
         monthlyFinalMesh.FaceNormals.ComputeFaceNormals();
 
-        meshHelper.rotateSurfaceToTopView(monthlyFinalMesh, diagramRotation,
-            diagramRotationAxis);
+        meshHelper.rotateSurfaceToTopView(monthlyFinalMesh,
+            visualizationParams.getDiagramRotation(),
+            visualizationParams.getDiagramRotationAxis());
 
         Point3d cenPtMesh = monthlyFinalMesh.GetBoundingBox(true).Center;
         Vector3d translateVector = Point3d.Subtract(
-        diagramCenterpoint, cenPtMesh);
+            visualizationParams.getDiagramCenterpoint(), cenPtMesh);
         monthlyFinalMesh.Translate(translateVector);
 
         incrementMeshPosition(monthlyFinalMesh, previousBoundingBox,
@@ -294,20 +330,19 @@ namespace Helianthus
             minRadiation, maxRadiation, overallMinRadiation,
             overallMaxRadiation);
         tiledMeshObject.setLegendMesh(legendMesh);
-        //monthlyFinalMesh.Append(legendMesh);
         tempAppendedMeshTiled.Append(legendMesh);
 
-
-        //add section header for tiled surface //todo make this more during the beginning
+        //add section header for tiled surface
         Mesh surfaceDliTitleMesh = meshHelper.getTitleTextMesh(
             "Surface DLI", monthlyFinalMesh, 1, 4, true);
         tiledMeshObject.setTitleMesh(surfaceDliTitleMesh);
         tempAppendedMeshTiled.Append(surfaceDliTitleMesh);
     }
 
-    private BarGraphObject createBarGraphSection(Mesh boundingMesh,
-        List<CropDataObject> cropDataInput, LegendDataObject legendData,
-        double maxRadiation, double overallMaxRadiation)
+    private BarGraphObject createBarGraphSection(
+        Mesh boundingMesh, List<CropDataObject> cropDataInput,
+        VisualizationDataObject visualizationParams, double maxRadiation,
+        double overallMaxRadiation)
     {
         //create bar graph section
         BarGraphObject barGraphObject = new BarGraphObject();
@@ -368,18 +403,18 @@ namespace Helianthus
         Mesh legendDescriptorMin = legendHelper.addLegendDescriptor(
             Convert.ToString(Convert.ToInt32(overallMinRadiation)) + " Min/yr",
                 legendMesh.GetBoundingBox(true).Min.X,
-                legendMesh.GetBoundingBox(true).Min.Y - .5, .5);
+                legendMesh.GetBoundingBox(true).Min.Y - .5, .5, 3);
         Mesh legendDescriptorMax = legendHelper.addLegendDescriptor(
             Convert.ToString(Convert.ToInt32(overallMaxRadiation)) + " Max/yr",
                 legendMesh.GetBoundingBox(true).Max.X,
-                legendMesh.GetBoundingBox(true).Min.Y - .5, .5);
+                legendMesh.GetBoundingBox(true).Min.Y - .5, .5, 3);
 
         if (minRadiation == maxRadiation)
         {
             Mesh legendDescriptorMonthlyMin = legendHelper.addLegendDescriptor(
             Convert.ToString(Convert.ToInt32(minRadiation)) + " Min/Max/mth",
             legendMesh.GetBoundingBox(true).Min.X,
-            legendMesh.GetBoundingBox(true).Max.Y + 1, .5);
+            legendMesh.GetBoundingBox(true).Max.Y + 1, .5, 3);
             legendDescriptorMonthlyMin.Translate(new Vector3d(
                 minXPos, 0, 0));
             legendMesh.Append(legendDescriptorMonthlyMin);
@@ -389,11 +424,11 @@ namespace Helianthus
             Mesh legendDescriptorMonthlyMin = legendHelper.addLegendDescriptor(
                 Convert.ToString(Convert.ToInt32(minRadiation)) + " Min/mth",
                 legendMesh.GetBoundingBox(true).Min.X,
-                legendMesh.GetBoundingBox(true).Max.Y + 1.5, .5);
+                legendMesh.GetBoundingBox(true).Max.Y + 1.5, .5, 3);
             Mesh legendDescriptorMonthlyMax = legendHelper.addLegendDescriptor(
                 Convert.ToString(Convert.ToInt32(maxRadiation)) + " Max/mth",
                 legendMesh.GetBoundingBox(true).Max.X,
-                legendMesh.GetBoundingBox(true).Max.Y + 1.5, .5);
+                legendMesh.GetBoundingBox(true).Max.Y + 1.5, .5, 3);
 
             legendDescriptorMonthlyMin.Translate(new Vector3d(
                 minXPos, 0, 0));

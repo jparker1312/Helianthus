@@ -62,7 +62,7 @@ namespace Helianthus
     {
         List<CropDataObject> cropDataInput = new List<CropDataObject>();
         Brep geometryInput = new Brep();
-        LegendDataObject legendData = new LegendDataObject();
+        VisualizationDataObject legendData = new VisualizationDataObject();
 
         if (!DA.GetDataList(0, cropDataInput)) { return; }
         if (!DA.GetData(1, ref geometryInput)) { return; }

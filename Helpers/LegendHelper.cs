@@ -148,7 +148,7 @@ namespace Helianthus
         }
 
         public Mesh addLegendDescriptor(string text, double centerPointX,
-            double centerPointY, double textHeight)
+            double centerPointY, double textHeight, double rectWidth)
         {
             Point3d center_point = new Point3d(0, 0, 0.001);
             Point3d height_point = new Point3d(0, 0, 10);
@@ -165,7 +165,7 @@ namespace Helianthus
 
             //todo change how the rectangle width is calculated
             TextEntity textEntityCropName = TextEntity.Create(text, plane_crop,
-                defaultDimensionStyle, true, 3, 0);
+                defaultDimensionStyle, true, rectWidth, 0);
 
             MeshHelper meshHelper = new MeshHelper();
             Mesh finalTextMesh = meshHelper.createTextMesh(textEntityCropName,

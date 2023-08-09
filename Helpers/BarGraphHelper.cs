@@ -124,7 +124,7 @@ namespace Helianthus
                 Mesh yPanelList = createBarGraphYAxisPanel(maxY,
                     yPanelStartPos, xAxisPanelHeight, barGraphTileHeight,
                     tileSpacerSize, finalYStartPoint, columnWidth,
-                    "DLI(mol/m2/d-1)", boundingBoxHeight);
+                    "DLI(mol・m^-2・d^-1 )", boundingBoxHeight);
                 finalMesh.Append(yPanelList);
 
                 Mesh cropTitleMesh = meshHelper.getTitleTextMesh(
