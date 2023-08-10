@@ -44,12 +44,3 @@ It is composed of three categories:
 1. Import
 2. Analyse Data
 3. Visualize Data
-
-Inside these categories, five components have been elaborated and are described consecutively.
-1. Import Crop Data: Create a crop list from the Helianthus database.
-2. Sunlight DLI: Converts solar radiation data into a daily light integral (DLI) constant.
-3. DLI Suitability: Filters crops based on DLI thresholds.
-4. Site-specific Crop Visualization: Visualize site-specific crop-surface DLI suitability.
-5. Legend Parameters: Fix legend parameters for visualizations.
-
-![Helianthus](./ReadmeResources/componentsList-01.png)
