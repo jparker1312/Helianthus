@@ -1,13 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Drawing;
 
-using Grasshopper;
 using Grasshopper.Kernel;
 using Rhino.Geometry;
 
 namespace Helianthus
 {
-  public class EnergyProjections : GH_Component
+  public class EnergySavings : GH_Component
   {
     /// <summary>
     /// Each implementation of GH_Component must provide a public 
@@ -16,10 +16,13 @@ namespace Helianthus
     /// Subcategory the panel. If you use non-existing tab or panel names, 
     /// new tabs/panels will automatically be created.
     /// </summary>
-    public EnergyProjections()
-      : base("Energy_Projections",
-             "Energy Projections",
-             "Energy Projections",
+    public EnergySavings()
+      : base("Energy_Savings",
+             "Energy Savings",
+             "Indicates the energy savings on a yearly basis achieved by " +
+             "the implementation of a hybrid lighting system that " +
+             "prioritizes sunlight over artificial light according to a " +
+             "specified crop specie and sunlight analysis.",
              "Helianthus",
              "03 | Visualize Data")
     {
@@ -28,35 +31,56 @@ namespace Helianthus
     /// <summary>
     /// Registers all the input parameters for this component.
     /// </summary>
-    protected override void RegisterInputParams(GH_Component.GH_InputParamManager pManager)
+    protected override void RegisterInputParams(GH_InputParamManager pManager)
     {
         pManager.AddGenericParameter(
-            "Tiled_Mesh_Obect",
-            "Tiled Mesh Obect",
-            "Tiled Mesh Obect",
+            "Monthly_Analysis",
+            "Monthly Analysis",
+            "List of monthly data containing the displayed meshes and " +
+            "simulated data.",
             GH_ParamAccess.list);
-        pManager.AddGenericParameter("CropsToVisualize", "Crops To Visualize",
-            "List of Crops that you want to visualize", GH_ParamAccess.list);
+        pManager.AddGenericParameter(
+            "Crop_Data",
+            "Crop Data",
+            "Imported crop data to contrast with surface specifications, " +
+            "obtained from the Import_Crop_Data component. ",
+            GH_ParamAccess.list);
         pManager.AddTextParameter(
             "Selected_Crop",
             "Selected Crop",
-            "Selected Crop",
+            "Selected Crop to analyze.",
             GH_ParamAccess.item);
-        pManager.AddPointParameter("Diagram_Centerpoint", "Diagram_Centerpoint",
-            "Centerpoint for diagran", GH_ParamAccess.item);
-        pManager[3].Optional = true;
-        pManager.AddBooleanParameter("Run_Simulation", "Run Simulation",
-            "Run Simulation", GH_ParamAccess.item);
+        pManager.AddPointParameter(
+            "Visualization_Centerpoint",
+            "Visualization Centerpoint",
+            "Point3d to be used as the starting point to generate the " +
+            "simulation visualization. If unspecified, defaults to " +
+            "Point3d(0,0,0).",
+            GH_ParamAccess.item,
+            new Point3d(0, 0, 0));
+            pManager[3].Optional = true;
+        pManager.AddBooleanParameter(
+            "Run_Simulation",
+            "Run Simulation",
+            "Run Simulation",
+            GH_ParamAccess.item);
     }
 
     /// <summary>
     /// Registers all the output parameters for this component.
     /// </summary>
-    protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
+    protected override void RegisterOutputParams(GH_OutputParamManager pManager)
     {
-        pManager.AddTextParameter("Out", "Out", "Input Parameters",
+        pManager.AddTextParameter(
+            "Out",
+            "Out",
+            "Outputs the input parameters",
             GH_ParamAccess.list);
-        pManager.AddMeshParameter("Mesh", "Mesh", "Mesh viz",
+        pManager.AddMeshParameter(
+            "Mesh",
+            "Mesh",
+            "A bar graph displaying the energy savings obtained through a " +
+            "hybrid lighting system for a specified crop along a year.",
             GH_ParamAccess.list);
     }
 
@@ -136,15 +160,9 @@ namespace Helianthus
     /// Provides an Icon for every component that will be visible in the User Interface.
     /// Icons need to be 24x24 pixels.
     /// </summary>
-    protected override System.Drawing.Bitmap Icon
-    {
-      get
-      { 
-        // You can add image files to your project resources and access them like this:
-        //return Resources.IconForThisComponent;
-        return null;
-      }
-    }
+    protected override Bitmap Icon => Properties.Resources.energySavings_icon;
+
+    public override GH_Exposure Exposure => GH_Exposure.secondary;
 
     /// <summary>
     /// Each component must have a unique Guid to identify it. 

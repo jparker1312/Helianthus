@@ -1,14 +1,11 @@
 ﻿using System;
 using System.Drawing;
-using System.Collections.Generic;
 
-using Grasshopper;
 using Grasshopper.Kernel;
-using Rhino.Geometry;
 
 namespace Helianthus
 {
-  public class EpwIndex : GH_Component
+  public class SGIndex : GH_Component
   {
     /// <summary>
     /// Each implementation of GH_Component must provide a public 
@@ -17,10 +14,11 @@ namespace Helianthus
     /// Subcategory the panel. If you use non-existing tab or panel names, 
     /// new tabs/panels will automatically be created.
     /// </summary>
-    public EpwIndex()
-      : base("EPWIndex",
-             "EPW Index",
-             "EPW Index currently using sensor readings based on Singapore study.",
+    public SGIndex()
+      : base("SG_Index",
+             "SG Index",
+             "Singapore Index currently using sensor readings based on " +
+             "Singapore study.",
              "Helianthus",
              "01 | Import Data")
     {
@@ -29,18 +27,21 @@ namespace Helianthus
     /// <summary>
     /// Registers all the input parameters for this component.
     /// </summary>
-    protected override void RegisterInputParams(GH_Component.GH_InputParamManager pManager)
+    protected override void RegisterInputParams(GH_InputParamManager pManager)
     {
     }
 
     /// <summary>
     /// Registers all the output parameters for this component.
     /// </summary>
-    protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
+    protected override void RegisterOutputParams(GH_OutputParamManager pManager)
     {
-        pManager.AddNumberParameter("EPW_Index", "EPW Index",
-        "EPW Index currently using sensor readings based on Singapore study.",
-        GH_ParamAccess.item);
+        pManager.AddNumberParameter(
+            "EPW_Index",
+            "EPW Index",
+            "EPW Index currently using sensor readings based on Singapore " +
+            "study.",
+            GH_ParamAccess.item);
     }
 
     /// <summary>

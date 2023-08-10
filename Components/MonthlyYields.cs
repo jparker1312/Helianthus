@@ -1,14 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Drawing;
 
-using Grasshopper;
 using Grasshopper.Kernel;
 using Grasshopper.Kernel.Types;
 using Rhino.Geometry;
 
 namespace Helianthus.Components
 {
-  public class YieldProjections : GH_Component
+  public class MonthlyYields : GH_Component
   {
     private BarGraphHelper barGraphHelper;
     private MeshHelper meshHelper;
@@ -20,10 +20,13 @@ namespace Helianthus.Components
     /// Subcategory the panel. If you use non-existing tab or panel names, 
     /// new tabs/panels will automatically be created.
     /// </summary>
-    public YieldProjections()
-      : base("Yield_Projections",
-             "YieldProjections",
-             "Yield Projections",
+    public MonthlyYields()
+      : base("Monthly_Yields",
+             "Monthly Yields",
+             "Prospective yield values. These projections take in " +
+             "consideration a production system in a Controlled Environment " +
+             "with optimized vertical agriculture system that enhances the " +
+             "maximum yield.",
              "Helianthus",
              "03 | Visualize Data")
     {
@@ -37,19 +40,27 @@ namespace Helianthus.Components
     protected override void RegisterInputParams(GH_InputParamManager pManager)
     {
         pManager.AddGenericParameter(
-            "Tiled_Mesh_Obect",
-            "Tiled Mesh Obect",
-            "Tiled Mesh Obect",
+            "Monthly_Analysis",
+            "Monthly Analysis",
+            "List of monthly data containing the displayed meshes and " +
+            "simulated data.",
             GH_ParamAccess.list);
-        pManager.AddGenericParameter("CropsToVisualize", "Crops To Visualize",
-            "List of Crops that you want to visualize", GH_ParamAccess.list);
+        pManager.AddGenericParameter(
+            "Crop_Data",
+            "Crop Data",
+            "Imported crop data to contrast with surface specifications, " +
+            "obtained from the Import_Crop_Data component. ",
+            GH_ParamAccess.list);
         pManager.AddTextParameter(
-            "Crop_Projections",
-            "Crop Projections",
-            "Crop Projections",
+            "Crop_Selection",
+            "Crop Selection",
+            "Contains monthly list of selected crops.",
             GH_ParamAccess.tree);
-        pManager.AddBooleanParameter("Run_Simulation", "Run Simulation",
-            "Run Simulation", GH_ParamAccess.item);
+        pManager.AddBooleanParameter(
+            "Run_Simulation",
+            "Run Simulation",
+            "Run Simulation",
+            GH_ParamAccess.item);
     }
 
     /// <summary>
@@ -57,9 +68,16 @@ namespace Helianthus.Components
     /// </summary>
     protected override void RegisterOutputParams(GH_OutputParamManager pManager)
     {
-        pManager.AddTextParameter("Out", "Out", "Input Parameters",
+        pManager.AddTextParameter(
+            "Out",
+            "Out",
+            "Outputs the input parameters",
             GH_ParamAccess.list);
-        pManager.AddMeshParameter("Mesh", "Mesh", "Mesh viz",
+        pManager.AddMeshParameter(
+            "Mesh",
+            "Mesh",
+            "A monthly list of a bar graph displaying yield performance of " +
+            "selected crops.",
             GH_ParamAccess.list);
     }
 
@@ -140,15 +158,9 @@ namespace Helianthus.Components
     /// Provides an Icon for every component that will be visible in the User Interface.
     /// Icons need to be 24x24 pixels.
     /// </summary>
-    protected override System.Drawing.Bitmap Icon
-    {
-      get
-      { 
-        // You can add image files to your project resources and access them like this:
-        //return Resources.IconForThisComponent;
-        return null;
-      }
-    }
+    protected override Bitmap Icon => Properties.Resources.monthlyYields_icon;
+
+    public override GH_Exposure Exposure => GH_Exposure.secondary;
 
     /// <summary>
     /// Each component must have a unique Guid to identify it. 

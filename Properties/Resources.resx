@@ -18,25 +18,34 @@
 	<data name="importCropData-icon" type="System.Resources.ResXFileRef, System.Windows.Forms">
 		<value>..\Resources\importCropData-icon.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
 	</data>
-	<data name="dliSuitability-icon" type="System.Resources.ResXFileRef, System.Windows.Forms">
-		<value>..\Resources\dliSuitability-icon.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
-	</data>
-	<data name="siteSpecificCropVis-icon" type="System.Resources.ResXFileRef, System.Windows.Forms">
-		<value>..\Resources\siteSpecificCropVis-icon.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
-	</data>
-	<data name="legend-icon" type="System.Resources.ResXFileRef, System.Windows.Forms">
-		<value>..\Resources\legend-icon.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
-	</data>
-	<data name="sunlightDli-icon" type="System.Resources.ResXFileRef, System.Windows.Forms">
-		<value>..\Resources\sunlightDli-icon.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
-	</data>
-	<data name="yieldVis-icon" type="System.Resources.ResXFileRef, System.Windows.Forms">
-		<value>..\Resources\yieldVis-icon.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+	<data name="visualizationParameters-icon" type="System.Resources.ResXFileRef, System.Windows.Forms">
+		<value>..\Resources\visualizationParameters-icon.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
 	</data>
 	<data name="index-icon" type="System.Resources.ResXFileRef, System.Windows.Forms">
 		<value>..\Resources\index-icon.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
 	</data>
-	<data name="glassMaterial-icon" type="System.Resources.ResXFileRef, System.Windows.Forms">
-		<value>..\Resources\glassMaterial-icon.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+	<data name="glassCover-icon" type="System.Resources.ResXFileRef, System.Windows.Forms">
+		<value>..\Resources\glassCover-icon.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+	</data>
+	<data name="plasticCover-icon" type="System.Resources.ResXFileRef, System.Windows.Forms">
+		<value>..\Resources\plasticCover-icon.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+	</data>
+	<data name="cropSelection-icon" type="System.Resources.ResXFileRef, System.Windows.Forms">
+		<value>..\Resources\cropSelection-icon.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+	</data>
+	<data name="cropSuitability-icon" type="System.Resources.ResXFileRef, System.Windows.Forms">
+		<value>..\Resources\cropSuitability-icon.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+	</data>
+		<data name="energySavings-icon" type="System.Resources.ResXFileRef, System.Windows.Forms">
+		<value>..\Resources\energySavings-icon.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+	</data>
+		<data name="monthlyYields-icon" type="System.Resources.ResXFileRef, System.Windows.Forms">
+		<value>..\Resources\monthlyYields-icon.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+	</data>
+	<data name="siteSuitability-icon" type="System.Resources.ResXFileRef, System.Windows.Forms">
+		<value>..\Resources\siteSuitability-icon.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+	</data>
+		<data name="supplementalLighting-icon" type="System.Resources.ResXFileRef, System.Windows.Forms">
+		<value>..\Resources\supplementalLighting-icon.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
 	</data>
 </root>

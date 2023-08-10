@@ -1,7 +1,7 @@
 Helianthus
 ==========
 
-![Helianthus](./ReadmeResources/helianthus-icon-192.png)
+![Helianthus](./ReadmeResources/helianthus-192.png)
 
 **Helianthus**: Crop-Centric Sunlight-Informed Tool for efficient urban agriculture planning and design.
 

@@ -60,9 +60,9 @@ namespace Helianthus.Properties {
         /// <summary>
         ///   Looks up a localized resource of type System.Drawing.Bitmap.
         /// </summary>
-        internal static System.Drawing.Bitmap dliSuitability_icon {
+        internal static System.Drawing.Bitmap cropSelection_icon {
             get {
-                object obj = ResourceManager.GetObject("dliSuitability-icon", resourceCulture);
+                object obj = ResourceManager.GetObject("cropSelection-icon", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
             }
         }
@@ -70,9 +70,29 @@ namespace Helianthus.Properties {
         /// <summary>
         ///   Looks up a localized resource of type System.Drawing.Bitmap.
         /// </summary>
-        internal static System.Drawing.Bitmap glassMaterial_icon {
+        internal static System.Drawing.Bitmap cropSuitability_icon {
             get {
-                object obj = ResourceManager.GetObject("glassMaterial-icon", resourceCulture);
+                object obj = ResourceManager.GetObject("cropSuitability-icon", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap energySavings_icon {
+            get {
+                object obj = ResourceManager.GetObject("energySavings-icon", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap glassCover_icon {
+            get {
+                object obj = ResourceManager.GetObject("glassCover-icon", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
             }
         }
@@ -110,9 +130,9 @@ namespace Helianthus.Properties {
         /// <summary>
         ///   Looks up a localized resource of type System.Drawing.Bitmap.
         /// </summary>
-        internal static System.Drawing.Bitmap legend_icon {
+        internal static System.Drawing.Bitmap monthlyYields_icon {
             get {
-                object obj = ResourceManager.GetObject("legend-icon", resourceCulture);
+                object obj = ResourceManager.GetObject("monthlyYields-icon", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
             }
         }
@@ -120,9 +140,9 @@ namespace Helianthus.Properties {
         /// <summary>
         ///   Looks up a localized resource of type System.Drawing.Bitmap.
         /// </summary>
-        internal static System.Drawing.Bitmap siteSpecificCropVis_icon {
+        internal static System.Drawing.Bitmap plasticCover_icon {
             get {
-                object obj = ResourceManager.GetObject("siteSpecificCropVis-icon", resourceCulture);
+                object obj = ResourceManager.GetObject("plasticCover-icon", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
             }
         }
@@ -130,9 +150,9 @@ namespace Helianthus.Properties {
         /// <summary>
         ///   Looks up a localized resource of type System.Drawing.Bitmap.
         /// </summary>
-        internal static System.Drawing.Bitmap sunlightDli_icon {
+        internal static System.Drawing.Bitmap siteSuitability_icon {
             get {
-                object obj = ResourceManager.GetObject("sunlightDli-icon", resourceCulture);
+                object obj = ResourceManager.GetObject("siteSuitability-icon", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
             }
         }
@@ -140,9 +160,19 @@ namespace Helianthus.Properties {
         /// <summary>
         ///   Looks up a localized resource of type System.Drawing.Bitmap.
         /// </summary>
-        internal static System.Drawing.Bitmap yieldVis_icon {
+        internal static System.Drawing.Bitmap supplementalLighting_icon {
             get {
-                object obj = ResourceManager.GetObject("yieldVis-icon", resourceCulture);
+                object obj = ResourceManager.GetObject("supplementalLighting-icon", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap visualizationParameters_icon {
+            get {
+                object obj = ResourceManager.GetObject("visualizationParameters-icon", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
             }
         }

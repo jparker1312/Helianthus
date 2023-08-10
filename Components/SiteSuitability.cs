@@ -26,9 +26,10 @@ namespace Helianthus
              "Site Suitability",
              "Visualize Daily Light Integral (DLI) of photosynthetic " +
              "sunlight levels on surfaces to determine best locations for " +
-             "crop placement. DLI is defined as the total amount of " +
-             "photosynthetically active radiation that impacts a square " +
-             "meter over 24 hrs",
+             "crop placement. " +
+             $"{Environment.NewLine}" +
+             "DLI is defined as the total amount of photosynthetically " +
+             "active radiation that impacts a square meter over 24 hrs",
              "Helianthus",
              "02 | Analyze Data")
     {
@@ -45,12 +46,15 @@ namespace Helianthus
         pManager.AddGenericParameter(
             "WEA_File",
             "WEA File",
-            "File path for .wea file. WEA files contain Daysim weather" +
-            " format with the sunlight climate data specifically to support " +
-            "building simulations. As such, the files are Typical " +
-            "Meteorological Years (TMY) published by a variety of " +
-            "organizations. The repository of climate data files can be " +
-            "found on climate.onebuilding.org",
+            "File path for .wea file." +
+            $"{Environment.NewLine}{Environment.NewLine}" +
+            "WEA files contain Daysim weather format with the sunlight " +
+            "climate data specifically to support building simulations. As " +
+            "such, the files are Typical Meteorological Years (TMY) " +
+            "published by a variety of organizations." +
+            $"{Environment.NewLine}{Environment.NewLine}" +
+            "The repository of climate data files can be found on " +
+            "climate.onebuilding.org",
             GH_ParamAccess.item);
         pManager.AddGeometryParameter(
             "Analysis_Geometry",
@@ -198,9 +202,9 @@ namespace Helianthus
     /// Provides an Icon for every component that will be visible in the User Interface.
     /// Icons need to be 24x24 pixels.
     /// </summary>
-    protected override Bitmap Icon => Properties.Resources.dliSuitability_icon;
+    protected override Bitmap Icon => Properties.Resources.siteSuitability_icon;
 
-    public override GH_Exposure Exposure => GH_Exposure.quarternary;
+    public override GH_Exposure Exposure => GH_Exposure.secondary;
 
     /// <summary>
     /// Each component must have a unique Guid to identify it. 

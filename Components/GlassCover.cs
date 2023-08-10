@@ -34,10 +34,14 @@ namespace Helianthus
             "Glass_Type",
             "Glass Type",
             "An integer representing the selected glass type." +
+            $"{Environment.NewLine}{Environment.NewLine}" +
             "Glass Type 0 : Low-Iron Glass with 92% transmittance; " +
+            $"{Environment.NewLine}" +
             "Glass Type 1 : Float Glass with 84% transmittance;" +
+            $"{Environment.NewLine}" +
             "Glass Type 2 : Highly Selective Double-Glazed Unit (DGU) with " +
             "65% transmittance. " +
+            $"{Environment.NewLine}{Environment.NewLine}" +
             "If unspecified, defaults to 0.",
             GH_ParamAccess.item,
             0);
@@ -77,7 +81,8 @@ namespace Helianthus
     /// <summary>
     /// This is the method that actually does the work.
     /// </summary>
-    /// <param name="DA">The DA object can be used to retrieve data from input parameters and 
+    /// <param name="DA">The DA object can be used to retrieve data from
+    /// input parameters and 
     /// to store data in output parameters.</param>
     protected override void SolveInstance(IGH_DataAccess DA)
     {
@@ -120,10 +125,11 @@ namespace Helianthus
     }
 
     /// <summary>
-    /// Provides an Icon for every component that will be visible in the User Interface.
+    /// Provides an Icon for every component that will be visible in the User
+    /// Interface.
     /// Icons need to be 24x24 pixels.
     /// </summary>
-    protected override Bitmap Icon => Properties.Resources.glassMaterial_icon;
+    protected override Bitmap Icon => Properties.Resources.glassCover_icon;
 
     public override GH_Exposure Exposure => GH_Exposure.tertiary;
 

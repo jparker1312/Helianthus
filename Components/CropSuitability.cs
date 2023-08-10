@@ -29,7 +29,7 @@ namespace Helianthus
              "monthly basis according to the crop DLI requirements and " +
              "the simulated sunlight DLI reaching the surface.",
              "Helianthus",
-             "02 | Analyze Data")
+             "03 | Visualize Data")
     {
         meshHelper = new MeshHelper();
         simulationHelper = new SimulationHelper();
@@ -49,12 +49,15 @@ namespace Helianthus
         pManager.AddGenericParameter(
             "WEA_File",
             "WEA File",
-            "File path for .wea file. WEA files contain Daysim weather " +
-            "format with the sunlight climate data specifically to support " +
-            "building simulations. As such, the files are Typical " +
-            "Meteorological Years (TMY) published by a variety of " +
-            "organizations. The repository of climate data files can be " +
-            "found on climate.onebuilding.org",
+            "File path for .wea file." +
+            $"{Environment.NewLine}{Environment.NewLine}" +
+            "WEA files contain Daysim weather format with the sunlight " +
+            "climate data specifically to support building simulations. As " +
+            "such, the files are Typical Meteorological Years (TMY) " +
+            "published by a variety of organizations." +
+            $"{Environment.NewLine}{Environment.NewLine}" +
+            "The repository of climate data files can be found on " +
+            "climate.onebuilding.org",
             GH_ParamAccess.item);
         pManager.AddTextParameter(
             "Monthly_WEA_Files_Folder",
@@ -69,8 +72,8 @@ namespace Helianthus
         pManager.AddGeometryParameter(
             "Context_Geometry",
             "Context Geometry",
-            "Optional. Rhino Surfaces or Rhino Meshes that can block sunlight from " +
-            "reaching the analysis geometry",
+            "Optional. Rhino Surfaces or Rhino Meshes that can block " +
+            "sunlight from reaching the analysis geometry",
             GH_ParamAccess.list);
         pManager[4].Optional = true;
         pManager.AddTextParameter(
@@ -79,8 +82,9 @@ namespace Helianthus
             "Optional. A simulation period containing a list of months for " +
             "computation to run. Note that the simulation works on a monhtly " +
             "basis. To add the months, it is required input a panel with the " +
-            "'multiline data' option unchecked. If unspecified, the " +
-            "simulation will run for all 12 months.",
+            "'multiline data' option unchecked. " +
+            $"{Environment.NewLine}{Environment.NewLine}" +
+            "If unspecified, the simulation will run for all 12 months.",
             GH_ParamAccess.list);
         pManager[5].Optional = true;
         pManager.AddGenericParameter(
@@ -88,7 +92,8 @@ namespace Helianthus
             "Cover_Material",
             "Optional. The selected cover material with its light " +
             "transmittance value, Various material types can be found under " +
-            "the Glass_Cover and Plastic_Cover components.",
+            "the Glass_Cover and Plastic_Cover components. If unspecified, " +
+            "defaults to an outdoor growth environment.",
             GH_ParamAccess.item);
         pManager[6].Optional = true;
         pManager.AddGenericParameter(
@@ -121,15 +126,16 @@ namespace Helianthus
             "surface and simulation period.",
             GH_ParamAccess.tree);
         pManager.AddTextParameter(
-            "Monthly_Crop_Recommendations",
-            "Monthly Crop Recommendations",
+            "Monthly_Suitable_Crops",
+            "Monthly Suitable Crops",
             "Outputs the total list of suitable crops for the selected " +
             "surface and simulation period.",
             GH_ParamAccess.tree);
         pManager.AddGenericParameter(
-            "Tiled_Mesh_Object",
-            "Tiled Mesh Object",
-            "Unifies all meshes into one object for subsequent visualizations.",
+            "Monthly_Analysis",
+            "Monthly Analysis",
+            "List of monthly data containing the displayed meshes and " +
+            "simulated data.",
             GH_ParamAccess.list);
         pManager.AddMeshParameter(
             "Mesh",
@@ -473,15 +479,9 @@ namespace Helianthus
     /// Provides an Icon for every component that will be visible in the User Interface.
     /// Icons need to be 24x24 pixels.
     /// </summary>
-    protected override Bitmap Icon
-    {
-      get
-      { 
-        // You can add image files to your project resources and access them like this:
-        //return Resources.IconForThisComponent;
-        return null;
-      }
-    }
+    protected override Bitmap Icon => Properties.Resources.cropSuitability_icon;
+
+    public override GH_Exposure Exposure => GH_Exposure.secondary;
 
     /// <summary>
     /// Each component must have a unique Guid to identify it. 

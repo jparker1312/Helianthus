@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Drawing;
+
 using Grasshopper.Kernel;
 
 namespace Helianthus
@@ -30,10 +32,16 @@ namespace Helianthus
     {
         pManager.AddIntegerParameter("Plastic_Type", "Plastic Type",
             "An integer representing the selected plastic type." +
-            "Plastic Type 0 : 3D-Printed Polylactic Acid (PLA) with 70% transmittance; " +
-            "Plastic Type 1 : Polymer Photovoltaics (PV) with 70% transmittance;" +
+            $"{Environment.NewLine}{Environment.NewLine}" +
+            "Plastic Type 0 : 3D-Printed Polylactic Acid (PLA) with 70% " +
+            "transmittance; " +
+            $"{Environment.NewLine}" +
+            "Plastic Type 1 : Polymer Photovoltaics (PV) with 70% " +
+            "transmittance;" +
+            $"{Environment.NewLine}" +
             "Plastic Type 2 : 3D-Printed Upcycled PET Bottles with " +
             "65% transmittance. " +
+            $"{Environment.NewLine}{Environment.NewLine}" +
             "If unspecified, defaults to 0.",
             GH_ParamAccess.item,
             0);
@@ -118,15 +126,9 @@ namespace Helianthus
     /// Provides an Icon for every component that will be visible in the User Interface.
     /// Icons need to be 24x24 pixels.
     /// </summary>
-    protected override System.Drawing.Bitmap Icon
-    {
-      get
-      { 
-        // You can add image files to your project resources and access them like this:
-        //return Resources.IconForThisComponent;
-        return null;
-      }
-    }
+    protected override Bitmap Icon => Properties.Resources.plasticCover_icon;
+
+    public override GH_Exposure Exposure => GH_Exposure.tertiary;
 
     /// <summary>
     /// Each component must have a unique Guid to identify it. 
