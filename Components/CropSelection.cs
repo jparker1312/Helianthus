@@ -42,6 +42,7 @@ namespace Helianthus.Components
             "Contains the total list of suitable crops for the selected " +
             "surface and simulation period.",
             GH_ParamAccess.tree);
+        pManager[0].Optional = true;
         pManager.AddTextParameter(
             "January_Crops",
             "January Crops",
@@ -175,7 +176,7 @@ namespace Helianthus.Components
         List<string> novCrops = new List<string>();
         List<string> decCrops = new List<string>();
 
-        if (!DA.GetDataTree (0, out cropDataInput)) { return; }
+        DA.GetDataTree (0, out cropDataInput);
         if (!DA.GetDataList(1, janCrops)) { return; }
         if (!DA.GetDataList(2, febCrops)) { return; }
         if (!DA.GetDataList(3, marCrops)) { return; }
@@ -209,23 +210,28 @@ namespace Helianthus.Components
         DataTree<string> finalCropList = new DataTree<string>();
         List<string> warnings = new List<string>();
         int monthCount = 0;
+
         foreach(List<string> monthlyUserListCrops in userInputMonthlyCrops)
         {
             foreach (string cropName in monthlyUserListCrops)
             {
+                bool found = false;
                 Grasshopper.Kernel.Data.GH_Path path =
                     new Grasshopper.Kernel.Data.GH_Path(monthCount + 1);
-                List<GH_String> recMonthCropList =
-                    cropDataInput.Branches[monthCount];
-                bool found = false;
-                foreach (GH_String cropRecName in recMonthCropList)
-                {
-                    if (cropRecName.ToString().Equals(cropName))
+                if (!cropDataInput.IsEmpty)
+                {       
+                    List<GH_String> recMonthCropList =
+                        cropDataInput.Branches[monthCount];                
+                    foreach (GH_String cropRecName in recMonthCropList)
                     {
-                        found = true;
-                        break;
+                        if (cropRecName.ToString().Equals(cropName))
+                        {
+                            found = true;
+                            break;
+                        }
                     }
                 }
+                
                 if (!found)
                 {
                     warnings.Add("month: " + (monthCount + 1) +

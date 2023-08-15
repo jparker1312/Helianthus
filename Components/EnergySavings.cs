@@ -144,7 +144,7 @@ namespace Helianthus
 
         //add bg plane
         MeshHelper meshHelper = new MeshHelper();
-        Mesh meshBase2dPlane = meshHelper.create2dBaseMesh(barGraphMesh);
+        Mesh meshBase2dPlane = meshHelper.create2dBaseMesh(barGraphMesh, 50);
         barGraphMesh.Append(meshBase2dPlane);
 
         List<Mesh> finalMeshList = new List<Mesh>

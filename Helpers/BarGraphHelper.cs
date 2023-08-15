@@ -65,7 +65,7 @@ namespace Helianthus
             //y key table area will be 1/3 the size of a tile in x length
             //double yAxisPanelWidth = barGraphTileWidth * .33;
             double finalYStartPoint = barGraphYStartPoint -
-                boundingBoxHeight - 1;
+                boundingBoxHeight;
 
             double yPanelStartPos = 0;
             int monthCount = 0;
@@ -78,7 +78,7 @@ namespace Helianthus
                 Point3d center_point_crops = new Point3d((monthCount *
                     (barGraphTileWidth + tileSpacerSize)) +
                     barGraphXStartPoint + (barGraphTileWidth / 2),
-                    finalYStartPoint, 0.001);
+                    finalYStartPoint+.5, 0.001);
                 Plane plane_crop = new Plane(center_point_crops, zaxis);
                 plane_crop.Rotate(1.5708, zaxis);
 
@@ -116,7 +116,7 @@ namespace Helianthus
                 monthCount++;
             }
 
-            double maxY = 0;
+            double maxY;
             if (type.Equals(Convert.ToString(Config.BarGraphType.A_LIGHT)))
             {
                 maxY = overallDenomenator;
@@ -124,7 +124,7 @@ namespace Helianthus
                 Mesh yPanelList = createBarGraphYAxisPanel(maxY,
                     yPanelStartPos, xAxisPanelHeight, barGraphTileHeight,
                     tileSpacerSize, finalYStartPoint, columnWidth,
-                    "DLI(mol・m^-2・d^-1 )", boundingBoxHeight);
+                    "DLI(mol・m^-2・d^-1 )", boundingBoxHeight/1.5);
                 finalMesh.Append(yPanelList);
 
                 Mesh cropTitleMesh = meshHelper.getTitleTextMesh(
@@ -137,13 +137,13 @@ namespace Helianthus
             }
             else if (type.Equals(Convert.ToString(Config.BarGraphType.ENERGY)))
             {
-                maxY = 100;
+                maxY = 10;
 
                 //YAxis DLI Panel
-                Mesh yPanelList = createBarGraphYAxisPanel(maxY,
+                Mesh yPanelList = createBarGraphYAxisPanelTens(maxY,
                     yPanelStartPos, xAxisPanelHeight, barGraphTileHeight,
                     tileSpacerSize, finalYStartPoint, columnWidth,
-                    "Percentage Energy Savings", boundingBoxHeight);
+                    "Energy Savings %", boundingBoxHeight/2);
                 finalMesh.Append(yPanelList);
 
                 Mesh cropTitleMesh = meshHelper.getTitleTextMesh(
@@ -163,13 +163,14 @@ namespace Helianthus
         }
 
         public Mesh createBarGraph2(Mesh meshInput,
-            List<CropDataObject> cropDataInput, double maxDli,
+            List<CropDataObject> cropDataInput, double maxDli, double minDli,
             double overallDenomenator, List<string> selectedCrops, string type)
         {
             //round DLI numbers
             if(type.Equals(Convert.ToString(Config.BarGraphType.DLI)))
             {
                 maxDli = Math.Round(maxDli, 0, MidpointRounding.AwayFromZero);
+                minDli = Math.Round(minDli, 0, MidpointRounding.AwayFromZero);
             } 
             overallDenomenator = Math.Round(overallDenomenator, 0,
                 MidpointRounding.AwayFromZero);
@@ -208,6 +209,12 @@ namespace Helianthus
             double finalYStartPoint = barGraphYStartPoint -
                 boundingBoxHeight - 1;
 
+            if (type.Equals(Convert.ToString(Config.BarGraphType.YIELD)))
+            {
+                finalYStartPoint = barGraphYStartPoint -
+                    (boundingBoxHeight / 1.2);
+            }
+
             double yPanelStartPos = 0;
             int cropCount = 0;
             //loop through each crop, list name, create bar graph tiles
@@ -238,9 +245,9 @@ namespace Helianthus
                 if (type.Equals(Convert.ToString(Config.BarGraphType.DLI)))
                 {
                     Mesh barGraphTiles = createBarGraphTiles(crop,
-                        overallDenomenator, maxDli, xAxisPanelHeight, finalYStartPoint,
-                        barGraphTileHeight, tileSpacerSize, tilePos_x_start,
-                        tilePos_x_end);
+                        overallDenomenator, maxDli, minDli, xAxisPanelHeight,
+                        finalYStartPoint, barGraphTileHeight, tileSpacerSize,
+                        tilePos_x_start, tilePos_x_end);
                     finalMesh.Append(barGraphTiles);
                 }
                 else if (type.Equals(Convert.ToString(Config.BarGraphType.YIELD)))
@@ -289,25 +296,25 @@ namespace Helianthus
                 Mesh yPanelList = createBarGraphYAxisPanel(maxY,
                     yPanelStartPos, xAxisPanelHeight, barGraphTileHeight,
                     tileSpacerSize, finalYStartPoint, columnWidth,
-                    "yield(kg/m2)?", boundingBoxHeight);
+                    "yield(kg/m^2)", boundingBoxHeight/1.5);
                 finalMesh.Append(yPanelList);
             }
             return finalMesh;
         }
 
         private Mesh createBarGraphTiles(CropDataObject crop,
-            double overallMaxDli, double maxDli,
+            double overallMaxDli, double maxDli, double minDli,
             double xAxisPanelHeight, double finalYStartPoint,
             double barGraphTileHeight, double tileSpacerSize,
             double tilePos_x_start, double tilePos_x_end)
         {
-            bool lessThanMax = false;
+            bool recCrop = false;
             //check if crop dli fits recommended crops
-            if (crop.getDli() <= maxDli){ lessThanMax = true; }
+            if (crop.getDli() <= maxDli && crop.getDli() >= minDli) { recCrop = true; }
 
             Mesh finalMesh = colorTiles(crop.getDli(), finalYStartPoint,
                 xAxisPanelHeight, barGraphTileHeight, tileSpacerSize,
-                tilePos_x_start, tilePos_x_end, lessThanMax,
+                tilePos_x_start, tilePos_x_end, recCrop,
                 Convert.ToDouble(crop.getDli()), overallMaxDli,
                 Config.DLI_COLOR_RANGE);
 
@@ -328,26 +335,22 @@ namespace Helianthus
             Plane recPlane = new Plane(rccenter_point, zaxis);
             Plane plane_recs = new Plane(center_point_recs, zaxis);
 
-            Interval xTileIntervalrecs = new Interval(barGraphXStartPoint, barGraphXStartPoint + barGraphTileWidth);
-            Interval yTileIntervalrecs = new Interval(finalYStartPoint + barGraphPanelHeight, finalYStartPoint + barGraphPanelHeight + barGraphTileHeight);
-            Mesh rec_mesh = Mesh.CreateFromPlane(recPlane, xTileIntervalrecs, yTileIntervalrecs, 1, 1);
-            rec_mesh.VertexColors.CreateMonotoneMesh(Color.FromArgb(100, 94, 113, 106));
+            Interval xTileIntervalrecs = new Interval(barGraphXStartPoint,
+                barGraphXStartPoint + barGraphTileWidth);
+            Interval yTileIntervalrecs = new Interval(finalYStartPoint +
+                barGraphPanelHeight, finalYStartPoint + barGraphPanelHeight +
+                barGraphTileHeight);
+            Mesh rec_mesh = Mesh.CreateFromPlane(recPlane, xTileIntervalrecs,
+                yTileIntervalrecs, 1, 1);
+            rec_mesh.VertexColors.CreateMonotoneMesh(Config.GRAY_GREEN_COLOR);
             finalMesh.Append(rec_mesh);
 
             plane_recs.Translate(new Vector3d(barGraphTileWidth, 0.5, 0));
-            TextEntity textEntityRecName = TextEntity.Create("Not Recommended",
+            TextEntity textEntityRecName = TextEntity.Create("Not suitable " +
+                "due to excessive supplemental lighting or sunlight exposure",
                 plane_recs, defaultDimensionStyle, true, 20, 0);
-            finalMesh.Append(meshHelper.createTextMesh(textEntityRecName, defaultDimensionStyle));
-
-            recPlane.Translate(new Vector3d(0, -barGraphTileHeight - tileSpacerSize, 0));
-            Mesh rec_mesh2 = Mesh.CreateFromPlane(recPlane, xTileIntervalrecs, yTileIntervalrecs, 1, 1);
-            rec_mesh2.VertexColors.CreateMonotoneMesh(Color.FromArgb(255, 255, 255, 255));
-            finalMesh.Append(rec_mesh2);
-
-            plane_recs.Translate(new Vector3d(0, -1, 0));
-            TextEntity textEntityRec2Name = TextEntity.Create("Recommended Under Supplemental Lighting",
-                plane_recs, defaultDimensionStyle, true, 20, 0);
-            finalMesh.Append(meshHelper.createTextMesh(textEntityRec2Name, defaultDimensionStyle));
+            finalMesh.Append(meshHelper.createTextMesh(textEntityRecName,
+                defaultDimensionStyle));
 
             return finalMesh;
         }
@@ -391,7 +394,7 @@ namespace Helianthus
             double tilePos_x_start, double tilePos_x_end)
         {
             double diffRad = cropDli - avgRad;
-            Mesh finalMesh = colorTiles(diffRad, finalYStartPoint,
+            Mesh finalMesh = colorAllTiles(diffRad, finalYStartPoint,
                 xAxisPanelHeight, barGraphTileHeight, tileSpacerSize,
                 tilePos_x_start, tilePos_x_end, true, diffRad, cropDli,
                 Config.LIGHT_COLOR_RANGE);
@@ -405,7 +408,7 @@ namespace Helianthus
             double tilePos_x_start, double tilePos_x_end)
         {
             double percEnergy = (avgRad/cropDli) * 100;
-            Mesh finalMesh = colorTiles(percEnergy, finalYStartPoint,
+            Mesh finalMesh = colorAllTilesTens(percEnergy, finalYStartPoint,
                 xAxisPanelHeight, barGraphTileHeight, tileSpacerSize,
                 tilePos_x_start, tilePos_x_end, true, percEnergy, 100,
                 Config.ENERGY_COLOR_RANGE);
@@ -451,6 +454,84 @@ namespace Helianthus
             return finalMesh;
         }
 
+        private Mesh colorAllTiles(double maxCount, double finalYStartPoint,
+            double xAxisPanelHeight, double barGraphTileHeight,
+            double tileSpacerSize, double tilePos_x_start,
+            double tilePos_x_end, bool monoMesh, double numerator,
+            double denomenator, List<Color> colorRange)
+        {
+            Mesh finalMesh = new Mesh();
+            for (int count = 1; count <= denomenator; count++)
+            {
+                //calculate Y Interval positions for this tile
+                double tilePos_y_start = finalYStartPoint +
+                    xAxisPanelHeight + ((count - 1) *
+                    (barGraphTileHeight + tileSpacerSize));
+                double tilePos_y_end = tilePos_y_start + barGraphTileHeight;
+
+                Mesh mesh = meshHelper.createMeshFromPlane(defaultPlane,
+                    tilePos_x_start, tilePos_x_end,
+                    tilePos_y_start, tilePos_y_end);
+
+                if (count > maxCount)
+                {
+                    mesh.VertexColors.CreateMonotoneMesh(
+                        Config.GRAY_GREEN_COLOR);
+                }
+                else
+                {
+                    //determine the color value based on relation to overall max dli
+                    double colorValueMultiplier = numerator / denomenator;
+                    if(colorValueMultiplier > 1) { colorValueMultiplier = 1; }
+                    Color meshColor = meshHelper.colorMeshByColorStepping(
+                        colorValueMultiplier, colorRange);
+                    mesh.VertexColors.CreateMonotoneMesh(meshColor);
+                }
+                finalMesh.Append(mesh);
+            }
+
+            return finalMesh;
+        }
+
+        private Mesh colorAllTilesTens(double maxCount, double finalYStartPoint,
+            double xAxisPanelHeight, double barGraphTileHeight,
+            double tileSpacerSize, double tilePos_x_start,
+            double tilePos_x_end, bool monoMesh, double numerator,
+            double denomenator, List<Color> colorRange)
+        {
+            Mesh finalMesh = new Mesh();
+            for (int count = 1; count <= denomenator; count+=10)
+            {
+                //calculate Y Interval positions for this tile
+                double tilePos_y_start = finalYStartPoint +
+                    xAxisPanelHeight + ((count - 1)/10 *
+                    (barGraphTileHeight + tileSpacerSize));
+                double tilePos_y_end = tilePos_y_start + barGraphTileHeight;
+
+                Mesh mesh = meshHelper.createMeshFromPlane(defaultPlane,
+                    tilePos_x_start, tilePos_x_end,
+                    tilePos_y_start, tilePos_y_end);
+
+                if (count > maxCount)
+                {
+                    mesh.VertexColors.CreateMonotoneMesh(
+                        Config.GRAY_GREEN_COLOR);
+                }
+                else
+                {
+                    //determine the color value based on relation to overall max dli
+                    double colorValueMultiplier = numerator / denomenator;
+                    if(colorValueMultiplier > 1) { colorValueMultiplier = 1; }
+                    Color meshColor = meshHelper.colorMeshByColorStepping(
+                        colorValueMultiplier, colorRange);
+                    mesh.VertexColors.CreateMonotoneMesh(meshColor);
+                }
+                finalMesh.Append(mesh);
+            }
+
+            return finalMesh;
+        }
+
         private Mesh createBarGraphYAxisPanel(double maxCount,
             double yPanelStartPos, double xAxisPanelHeight,
             double barGraphTileHeight, double tileSpacerSize,
@@ -468,6 +549,47 @@ namespace Helianthus
 
                 TextEntity textEntityDliCount = TextEntity.Create(count.ToString(),
                     plane_cropDli, defaultDimensionStyle, true, yAxisPanelWidth, 0);
+
+                finalMesh.Append(meshHelper.createTextMesh(textEntityDliCount, defaultDimensionStyle));
+            }
+
+            Point3d center_point_yName = new Point3d(yPanelStartPos + 1.5,
+                finalYStartPoint + (yHeight/2), .001);
+            Plane plane_yName = new Plane(center_point_yName, zaxis);
+
+            DimensionStyle dimensionStyle = new DimensionStyle();
+            dimensionStyle.TextHeight = .5;
+            TextEntity textEntityYPlane = TextEntity.Create(yLabel,
+                plane_yName, dimensionStyle, true, yHeight, 0);
+
+            Mesh yPlaneText = meshHelper.createTextMesh(textEntityYPlane, dimensionStyle);
+            //todo create a toRadians helper function
+            yPlaneText.Rotate(1.5708, new Vector3d(0, 0, 1), yPlaneText.GetBoundingBox(true).Min);
+
+            finalMesh.Append(yPlaneText);
+
+            return finalMesh;
+        }
+
+        private Mesh createBarGraphYAxisPanelTens(double maxCount,
+            double yPanelStartPos, double xAxisPanelHeight,
+            double barGraphTileHeight, double tileSpacerSize,
+            double finalYStartPoint, double yAxisPanelWidth, string yLabel,
+            double yHeight)
+        {
+            Mesh finalMesh = new Mesh();
+            for (int count = 0; count <= maxCount; count++)
+            {
+                //Calculate the YAxis panel Y position using the current DLI count
+                // and taking consideration of the yOffset input parameter
+                Point3d center_point_crop = new Point3d(yPanelStartPos, xAxisPanelHeight +
+                    (count * (barGraphTileHeight + tileSpacerSize)) + finalYStartPoint, 0.001);
+                Plane plane_cropDli = new Plane(center_point_crop, zaxis);
+
+                string countName = (count * 10).ToString();
+                TextEntity textEntityDliCount = TextEntity.Create(countName,
+                    plane_cropDli, defaultDimensionStyle, true,
+                    yAxisPanelWidth, 0);
 
                 finalMesh.Append(meshHelper.createTextMesh(textEntityDliCount, defaultDimensionStyle));
             }

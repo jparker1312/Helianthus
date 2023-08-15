@@ -69,5 +69,12 @@ namespace Helianthus
             A_LIGHT,
             ENERGY
         };
+
+
+        // 1 : 1-2
+        // 2 : 3-6
+        // 3 : 7-12
+        // 4 : 13-18
+        // 5 : 19++
     }
 }

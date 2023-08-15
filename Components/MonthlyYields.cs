@@ -131,19 +131,19 @@ namespace Helianthus.Components
         {
             Mesh barGraphMesh = barGraphHelper.createBarGraph2(
                 tiledMeshObject.getBarGraphMesh().getBarGraphMesh(),
-                cropData, 0, maxOverallYield,
+                cropData, 0, 0, maxOverallYield,
                 selectedCropsByMonth[monthlyCount],
                 Convert.ToString(Config.BarGraphType.YIELD));
 
             Mesh yieldTitleText = meshHelper.getTitleTextMesh(
-                "Yield Projections (kg?)", barGraphMesh, 1, 2, true);
+                "Yield Projections", barGraphMesh, 1, 2, true);
                 barGraphMesh.Append(yieldTitleText);
 
             Mesh appendedMesh = tiledMeshObject.appendAllMeshes();
             appendedMesh.Append(barGraphMesh);
 
             //add bg plane
-            Mesh meshBase2dPlane = meshHelper.create2dBaseMesh(appendedMesh);
+            Mesh meshBase2dPlane = meshHelper.create2dBaseMesh(appendedMesh, 50);
             appendedMesh.Append(meshBase2dPlane);
 
             finalMeshList.Add(appendedMesh);

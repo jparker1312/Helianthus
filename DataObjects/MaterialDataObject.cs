@@ -1,4 +1,7 @@
 ﻿using System;
+using GH_IO.Serialization;
+using System.Xml.Linq;
+
 namespace Helianthus
 {
 	public class MaterialDataObject
@@ -9,7 +12,10 @@ namespace Helianthus
 
 		public MaterialDataObject()
 		{
-		}
+            material_id = 99;
+            material_name = "No Material Selected";
+            material_transparency = 1.0;
+        }
 
         public MaterialDataObject(int id, string name,
 			double transparency)

@@ -47,7 +47,7 @@ namespace Helianthus
             GH_ParamAccess.item,
             1.0);
         pManager[1].Optional = true;
-        pManager.AddNumberParameter(
+        pManager.AddIntegerParameter(
             "Visualization_Background_Transparency",
             "Visualization Background Transparency",
             "Determines transparency of the background for the " +
@@ -105,7 +105,7 @@ namespace Helianthus
     {
         Point3d visualizationCenterpoint = new Point3d(0,0,0);
         double visualizationScale = 1;
-        double visualizationBgTransparency = 50;
+        int visualizationBgTransparency = 50;
         Vector3d aGeometryRotationAxis = new Vector3d(0,0,1);
         double aGeometryRotation = 0;
 

@@ -5,7 +5,7 @@ using Grasshopper.Kernel;
 
 namespace Helianthus
 {
-  public class SGIndex : GH_Component
+  public class SG_CorrectionFactor : GH_Component
   {
     /// <summary>
     /// Each implementation of GH_Component must provide a public 
@@ -14,11 +14,13 @@ namespace Helianthus
     /// Subcategory the panel. If you use non-existing tab or panel names, 
     /// new tabs/panels will automatically be created.
     /// </summary>
-    public SGIndex()
-      : base("SG_Index",
-             "SG Index",
-             "Singapore Index currently using sensor readings based on " +
-             "Singapore study.",
+    public SG_CorrectionFactor()
+      : base("SG_CorrectionFactor",
+             "SG Correction Factor",
+             "Factor as an input for the correction of a known systemic " +
+             "inaccuracy on the simulated DLI calculations. The factor is " +
+             "obtained from an empirical validation using environmental " +
+             "sunlight sensing.",
              "Helianthus",
              "01 | Import Data")
     {
@@ -37,9 +39,9 @@ namespace Helianthus
     protected override void RegisterOutputParams(GH_OutputParamManager pManager)
     {
         pManager.AddNumberParameter(
-            "EPW_Index",
-            "EPW Index",
-            "EPW Index currently using sensor readings based on Singapore " +
+            "SG_Correction_Factor",
+            "SG Correction Factor",
+            "" +
             "study.",
             GH_ParamAccess.item);
     }
@@ -58,7 +60,7 @@ namespace Helianthus
     /// Provides an Icon for every component that will be visible in the User Interface.
     /// Icons need to be 24x24 pixels.
     /// </summary>
-    protected override Bitmap Icon => Properties.Resources.index_icon;
+    protected override Bitmap Icon => Properties.Resources.sgIndex_icon;
 
     public override GH_Exposure Exposure => GH_Exposure.secondary;
 

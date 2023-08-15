@@ -9,9 +9,7 @@ namespace Helianthus
         double diagramRotation = 0;
         private Point3d graphOffset;
 		private double graphScale;
-		private double graphBackgroundTransparency;
-		//todo add bg color?
-		//private Color graphBackgroundColor;
+		private int graphBackgroundTransparency;
 
 		public VisualizationDataObject()
 		{
@@ -48,7 +46,7 @@ namespace Helianthus
 			graphScale = scale;
 		}
 		
-		public void setGraphBackgroundTransparency(double transparency)
+		public void setGraphBackgroundTransparency(int transparency)
 		{
 			graphBackgroundTransparency = transparency;
 		}
@@ -78,7 +76,7 @@ namespace Helianthus
 			return graphScale;
 		}
 
-		public double getGraphBackgroundTransparency()
+		public int getGraphBackgroundTransparency()
 		{
 			return graphBackgroundTransparency;
 		}

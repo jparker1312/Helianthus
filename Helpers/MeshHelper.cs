@@ -165,6 +165,8 @@ namespace Helianthus
                 fInd++;
             }
 
+            //finalMesh.Translate(new Vector3d(0, 0, 20));
+
             return finalMesh;
         }
 
@@ -195,7 +197,7 @@ namespace Helianthus
             return finalMesh;
         }
 
-        public Mesh create2dBaseMesh(Mesh inputMesh)
+        public Mesh create2dBaseMesh(Mesh inputMesh, int transparency)
         {
             //Get the bounding box for the input geometry.
             //This will be used to offset and scale our graph
@@ -216,14 +218,13 @@ namespace Helianthus
                 minBoundingBoxGeometry.Y + boundingBoxHeight + 1);
 
             //offset starter plane on z axis so that it does not interfer with
-            Plane basePlane = new Plane(new Point3d(0, 0, 0.0001), zaxis);
+            Plane basePlane = new Plane(new Point3d(0, 0, 0), zaxis);
             Mesh baseMesh = Mesh.CreateFromPlane(basePlane,
                 xIntervalBaseMesh, yintervalBaseMesh, 1, 1);
 
-            //deaulting to a white color. Could allow for specification of base color...
-            //todo make this editable?
+            //deaulting to a white color
             baseMesh.VertexColors.CreateMonotoneMesh(
-                Color.FromArgb(50, 250, 250, 250));
+                Color.FromArgb(transparency, 255, 255, 255));
 
             return baseMesh;
         }

@@ -12,6 +12,9 @@ namespace Helianthus
 		private Mesh backgroundMesh;
 
 		private List<double> dataTreeRadiation;
+        private List<int> dliGroupClassification;
+        private double maxDli;
+        private double minDli;
 		private List<string> monthlyCropsThatFitRangeString;
 
         private BarGraphObject barGraphObject;
@@ -61,6 +64,11 @@ namespace Helianthus
             dataTreeRadiation = radiationValues;
         }
 
+        public void setDliGroupClassification(List<int> dliGroups)
+        {
+            dliGroupClassification = dliGroups;
+        }
+
         public void setMonthlyCropsList(List<string> cropValues)
         {
             monthlyCropsThatFitRangeString = cropValues;
@@ -71,6 +79,16 @@ namespace Helianthus
             barGraphObject = barGraph;
         }
 
+        public void setMaxDli(double dli)
+        {
+            maxDli = dli;
+        }
+
+        public void setMinDli(double dli)
+        {
+            minDli = dli;
+        }
+
         public List<double> getRadiationList()
         {
             return dataTreeRadiation;
@@ -79,6 +97,21 @@ namespace Helianthus
         public BarGraphObject getBarGraphMesh()
         {
             return barGraphObject;
+        }
+
+        public List<int> getDliGroupClassification()
+        {
+            return dliGroupClassification;
+        }
+
+        public double getMaxDli()
+        {
+            return maxDli;
+        }
+
+        public double getMinDli()
+        {
+            return minDli;
         }
 
         public Mesh appendAllMeshes()

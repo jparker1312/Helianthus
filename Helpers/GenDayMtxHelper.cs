@@ -7,7 +7,7 @@ namespace Helianthus
 	public class GenDayMtxHelper
 	{
         //todo need to figure out how to make this editable. maybe just a parameter? how does ladybug do it?
-        private string genDayMtxFilePath = "/Users/joel/Projects/Programming/AlbaThesis/GrasshopperTools/radiance/bin/gendaymtx";
+        //private string genDayMtxFilePath = "/Users/joel/Projects/Programming/AlbaThesis/GrasshopperTools/radiance/bin/gendaymtx";
         private static string gendaymtx_arg_direct = "-m 1 -d -A -h ";
         private static string gendaymtx_arg_diffuse = "-m 1 -s -A -h ";
 
@@ -15,13 +15,15 @@ namespace Helianthus
 		{
 		}
 
-        public List<double> getGenDayMtxTotalRadiation(string weaFileLocation)
+        public List<double> getGenDayMtxTotalRadiation(string weaFileLocation,
+            string radianceFolder)
         {
+            string genDayMtxFilePath = radianceFolder + "/bin/gendaymtx";
             GenDayMtxHelper genDayMtxHelper = new GenDayMtxHelper();
             string directRadiationRGB = genDayMtxHelper.callGenDayMtx(
-                weaFileLocation, true);
+                genDayMtxFilePath, weaFileLocation, true);
             string diffuseRadiationRGB = genDayMtxHelper.callGenDayMtx(
-                weaFileLocation, false);
+                genDayMtxFilePath, weaFileLocation, false);
 
             SimulationHelper simulationHelper = new SimulationHelper();
             List<double> directRadiationList;
@@ -37,7 +39,7 @@ namespace Helianthus
             return totalRadiationList;
         }
 
-        public string callGenDayMtx(string weaFileLocation, bool getDirectRadiation)
+        public string callGenDayMtx(string genDayMtxFilePath, string weaFileLocation, bool getDirectRadiation)
         {
             ProcessStartInfo startInfo = new ProcessStartInfo();
             startInfo.UseShellExecute = false;
@@ -71,7 +73,7 @@ namespace Helianthus
         }
 
         public List<List<double>> runMonthlyGenDayMtxSimulations2(string pathname,
-            List<string> monthlyRange)
+            List<string> monthlyRange, string radianceFolder)
         {
             List<List<double>> totalRadiationListByMonth = new List<List<double>>();
             for (int monthCount10 = 1; monthCount10 <= 12; monthCount10++)
@@ -82,7 +84,8 @@ namespace Helianthus
                         monthCount10 + ".wea";
 
                     List<double> genDayMtxTotalRadiationList = 
-                        getGenDayMtxTotalRadiation(weaFileLocation);
+                        getGenDayMtxTotalRadiation(weaFileLocation,
+                        radianceFolder);
 
                     totalRadiationListByMonth.Add(genDayMtxTotalRadiationList);
                 }

@@ -120,16 +120,6 @@ namespace Helianthus.Properties {
         /// <summary>
         ///   Looks up a localized resource of type System.Drawing.Bitmap.
         /// </summary>
-        internal static System.Drawing.Bitmap index_icon {
-            get {
-                object obj = ResourceManager.GetObject("index-icon", resourceCulture);
-                return ((System.Drawing.Bitmap)(obj));
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized resource of type System.Drawing.Bitmap.
-        /// </summary>
         internal static System.Drawing.Bitmap monthlyYields_icon {
             get {
                 object obj = ResourceManager.GetObject("monthlyYields-icon", resourceCulture);
@@ -143,6 +133,16 @@ namespace Helianthus.Properties {
         internal static System.Drawing.Bitmap plasticCover_icon {
             get {
                 object obj = ResourceManager.GetObject("plasticCover-icon", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap sgIndex_icon {
+            get {
+                object obj = ResourceManager.GetObject("sgIndex-icon", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
             }
         }

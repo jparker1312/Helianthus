@@ -341,34 +341,91 @@ namespace Helianthus
             return surfaceSunlightDLI;
         }
 
-    public List<double> getSimulationRadiationList(Mesh joinedMesh,
-        List<Brep> geometryInput, List<Brep> contextGeometryInput,
-        List<double> genDayMtxTotalRadiationList, double materialTransparency)
-    {
-        //add offset distance for all points representing the faces of the
-        //gridded mesh
-        MeshHelper meshHelper = new MeshHelper();
-        List<Point3d> points = meshHelper.getPointsOfMesh(joinedMesh);
+        public List<int> getDliGroupClassification(double minDli, double maxDli)
+        {
+            maxDli = Math.Round(maxDli, 0, MidpointRounding.AwayFromZero);
+            minDli = Math.Round(minDli, 0, MidpointRounding.AwayFromZero);
 
-        // mesh together the geometry and the context
-        Mesh contextMesh = meshHelper.getContextMesh(
-            geometryInput, contextGeometryInput);
+            int minClass;
+            int maxClass;
+            if (maxDli >= 19) { maxClass = 5; }
+            else if(maxDli >= 13){ maxClass = 4; }
+            else if (maxDli >= 7) { maxClass = 3; }
+            else if (maxDli >= 3) { maxClass = 2; }
+            else if (maxDli >= 1) { maxClass = 1; }
+            else { maxClass = 0; }
 
-        //get tragenza dome vectors. to use for intersection later
-        Mesh tragenzaDomeMesh = getTragenzaDome();
-        List<Vector3d> allVectors = getAllVectors(
-            tragenzaDomeMesh);
+            if (minDli < 1){ minClass = 0; }
+            else if(minDli <= 2) { minClass = 1; }
+            else if (minDli <= 6) { minClass = 2; }
+            else if (minDli <= 12) { minClass = 3; }
+            else if (minDli <= 18) { minClass = 4; }
+            else { minClass = 5; }
 
-        //intersect mesh rays
-        IntersectionObject intersectionObject = intersectMeshRays(contextMesh,
-            points, allVectors, joinedMesh.FaceNormals);
+            List<int> dliGroups = new List<int>()
+            {
+                minClass,
+                maxClass
+            };
 
-        //compute the results
-        List<double> finalRadiationList = computeFinalRadiationList(
-            intersectionObject, genDayMtxTotalRadiationList, materialTransparency);
+            return dliGroups;
+        }
 
-        return finalRadiationList;
-    }
+        public List<int> getDliRangeFromDliGroups(List<int> dliGroups)
+        {
+            int maxDli;
+            if (dliGroups[1] == 5) { maxDli = 100; }
+            else if (dliGroups[1] == 4) { maxDli = 18; }
+            else if (dliGroups[1] == 3) { maxDli = 12; }
+            else if (dliGroups[1] == 2) { maxDli = 6; }
+            else if (dliGroups[1] == 1) { maxDli = 2; }
+            else { maxDli = 0; }
+
+            int minDli;
+            if (dliGroups[0] == 5) { minDli = 19; }
+            else if (dliGroups[0] == 4) { minDli = 13; }
+            else if (dliGroups[0] == 3) { minDli = 7; }
+            else if (dliGroups[0] == 2) { minDli = 3; }
+            else if (dliGroups[0] == 1) { minDli = 1; }
+            else { minDli = 0; }
+
+            List<int> dliRange = new List<int>()
+            {
+                minDli,
+                maxDli
+            };
+
+            return dliRange;
+        }
+
+        public List<double> getSimulationRadiationList(Mesh joinedMesh,
+            List<Brep> geometryInput, List<Brep> contextGeometryInput,
+            List<double> genDayMtxTotalRadiationList, double materialTransparency)
+        {
+            //add offset distance for all points representing the faces of the
+            //gridded mesh
+            MeshHelper meshHelper = new MeshHelper();
+            List<Point3d> points = meshHelper.getPointsOfMesh(joinedMesh);
+
+            // mesh together the geometry and the context
+            Mesh contextMesh = meshHelper.getContextMesh(
+                geometryInput, contextGeometryInput);
+
+            //get tragenza dome vectors. to use for intersection later
+            Mesh tragenzaDomeMesh = getTragenzaDome();
+            List<Vector3d> allVectors = getAllVectors(
+                tragenzaDomeMesh);
+
+            //intersect mesh rays
+            IntersectionObject intersectionObject = intersectMeshRays(contextMesh,
+                points, allVectors, joinedMesh.FaceNormals);
+
+            //compute the results
+            List<double> finalRadiationList = computeFinalRadiationList(
+                intersectionObject, genDayMtxTotalRadiationList, materialTransparency);
+
+            return finalRadiationList;
+        }
     }
 }
 

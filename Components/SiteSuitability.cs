@@ -43,6 +43,21 @@ namespace Helianthus
     /// </summary>
     protected override void RegisterInputParams(GH_InputParamManager pManager)
     {
+        pManager.AddTextParameter(
+            "Radiance_Folder",
+            "Radiance Folder",
+            "File path for Radiance folder" +
+            $"{Environment.NewLine}{Environment.NewLine}" +
+            "More information on radiance can be found here: " +
+            "https://github.com/LBNL-ETA/Radiance" +
+            $"{Environment.NewLine}{Environment.NewLine}" +
+            "Radiance can be downloaded from the following location: " +
+            "https://github.com/LBNL-ETA/Radiance/releases" +
+            $"{Environment.NewLine}{Environment.NewLine}" +
+            "Choose the release and version that's sutied to your system. " +
+            "Download the zip. Unzip and move to a location. That location " +
+            "will be used as the input.",
+            GH_ParamAccess.item);
         pManager.AddGenericParameter(
             "WEA_File",
             "WEA File",
@@ -67,7 +82,7 @@ namespace Helianthus
             "Optional. Rhino Surfaces or Rhino Meshes that can block " +
             "sunlight from reaching the analysis geometry",
             GH_ParamAccess.list);
-        pManager[2].Optional = true;
+        pManager[3].Optional = true;
         pManager.AddNumberParameter(
             "Grid_Size",
             "Grid Size",
@@ -76,7 +91,7 @@ namespace Helianthus
             "monthly calculations.",
             GH_ParamAccess.item,
             1.0);
-        pManager[3].Optional = true;
+        pManager[4].Optional = true;
         pManager.AddBooleanParameter(
             "Run_Simulation",
             "Run Simulation",
@@ -115,21 +130,30 @@ namespace Helianthus
     /// to store data in output parameters.</param>
     protected override void SolveInstance(IGH_DataAccess DA)
     {
+        string radianceFolder = "";
         string weaFileLocation = "";
         List<Brep> analysisGeometryInput = new List<Brep>();
         List<Brep> contextGeometryInput = new List<Brep>();
         double gridSize = 1.0;
         bool run_Simulation = false;
 
-        if (!DA.GetData(0, ref weaFileLocation)) { return; }
-        if (!DA.GetDataList(1, analysisGeometryInput)) { return; }
-        DA.GetDataList(2, contextGeometryInput);
-        DA.GetData(3, ref gridSize);
-        if (!DA.GetData(4, ref run_Simulation)) { return; }
+        if (!DA.GetData(0, ref radianceFolder)) { return; }
+        if (!DA.GetData(1, ref weaFileLocation)) { return; }
+        if (!DA.GetDataList(2, analysisGeometryInput)) { return; }
+        DA.GetDataList(3, contextGeometryInput);
+        DA.GetData(4, ref gridSize);
+        if (!DA.GetData(5, ref run_Simulation)) { return; }
+
         if (!run_Simulation){ return; }
 
+        if(radianceFolder == "" || weaFileLocation == "")
+        {
+            //todo add message
+            return; 
+        }
+
         List<double> genDayMtxTotalRadiationList = genDayMtxHelper.
-            getGenDayMtxTotalRadiation(weaFileLocation);
+            getGenDayMtxTotalRadiation(weaFileLocation, radianceFolder);
 
         //create gridded mesh from geometry
         Mesh joinedMesh = meshHelper.createGriddedMesh(analysisGeometryInput, gridSize);

@@ -46,6 +46,21 @@ namespace Helianthus
             "Imported crop data to contrast with surface specifications, " +
             "obtained from the Import_Crop_Data component. ",
             GH_ParamAccess.list);
+        pManager.AddTextParameter(
+            "Radiance_Folder",
+            "Radiance Folder",
+            "File path for Radiance folder" +
+            $"{Environment.NewLine}{Environment.NewLine}" +
+            "More information on radiance can be found here: " +
+            "https://github.com/LBNL-ETA/Radiance" +
+            $"{Environment.NewLine}{Environment.NewLine}" +
+            "Radiance can be downloaded from the following location: " +
+            "https://github.com/LBNL-ETA/Radiance/releases" +
+            $"{Environment.NewLine}{Environment.NewLine}" +
+            "Choose the release and version that's sutied to your system. " +
+            "Download the zip. Unzip and move to a location. That location " +
+            "will be used as the input.",
+            GH_ParamAccess.item);
         pManager.AddGenericParameter(
             "WEA_File",
             "WEA File",
@@ -75,7 +90,7 @@ namespace Helianthus
             "Optional. Rhino Surfaces or Rhino Meshes that can block " +
             "sunlight from reaching the analysis geometry",
             GH_ParamAccess.list);
-        pManager[4].Optional = true;
+        pManager[5].Optional = true;
         pManager.AddTextParameter(
             "Simulation_Period",
             "Simulation Period",
@@ -86,7 +101,7 @@ namespace Helianthus
             $"{Environment.NewLine}{Environment.NewLine}" +
             "If unspecified, the simulation will run for all 12 months.",
             GH_ParamAccess.list);
-        pManager[5].Optional = true;
+        pManager[6].Optional = true;
         pManager.AddGenericParameter(
             "Cover_Material",
             "Cover_Material",
@@ -95,13 +110,13 @@ namespace Helianthus
             "the Glass_Cover and Plastic_Cover components. If unspecified, " +
             "defaults to an outdoor growth environment.",
             GH_ParamAccess.item);
-        pManager[6].Optional = true;
+        pManager[7].Optional = true;
         pManager.AddGenericParameter(
             "Visualization_Parameters",
             "Visualization Parameters",
             "Visualization parameters for legends and diagrams.",
             GH_ParamAccess.item);
-        pManager[7].Optional = true;
+        pManager[8].Optional = true;
         pManager.AddBooleanParameter(
             "Run_Simulation",
             "Run Simulation",
@@ -154,25 +169,41 @@ namespace Helianthus
     {
         //REQ
         List<CropDataObject> cropDataInput = new List<CropDataObject>();
+        string radianceFolder = "";
         string weaFileLocation = "";
         string pathname_MonthlyWeaFiles = "";
         Brep geometryInput = new Brep();
         bool run_Simulation = false;
         //OPT
         List<Brep> contextGeometryInput = new List<Brep>();
-        List<string> simulation_monthRange = new List<string>();
+        List<string> simulation_monthRange = new List<string>
+        {
+            "1",
+            "2",
+            "3",
+            "4",
+            "5",
+            "6",
+            "7",
+            "8",
+            "9",
+            "10",
+            "11",
+            "12"
+        };
         MaterialDataObject materialDataObject = new MaterialDataObject();
         VisualizationDataObject visualizationParams = new VisualizationDataObject();
 
         if (!DA.GetDataList(0, cropDataInput)) { return; }
-        if (!DA.GetData(1, ref weaFileLocation)) { return; }
-        if (!DA.GetData(2, ref pathname_MonthlyWeaFiles)) { return; }
-        if (!DA.GetData(3, ref geometryInput)) { return; }
-        DA.GetDataList(4, contextGeometryInput);
-        DA.GetDataList(5, simulation_monthRange);
-        DA.GetData(6, ref materialDataObject);
-        DA.GetData(7, ref visualizationParams);
-        if (!DA.GetData(8, ref run_Simulation)) { return; }
+        if (!DA.GetData(1, ref radianceFolder)) { return; }
+        if (!DA.GetData(2, ref weaFileLocation)) { return; }
+        if (!DA.GetData(3, ref pathname_MonthlyWeaFiles)) { return; }
+        if (!DA.GetData(4, ref geometryInput)) { return; }
+        DA.GetDataList(5, contextGeometryInput);
+        DA.GetDataList(6, simulation_monthRange);
+        DA.GetData(7, ref materialDataObject);
+        DA.GetData(8, ref visualizationParams);
+        if (!DA.GetData(9, ref run_Simulation)) { return; }
 
         if (!run_Simulation){ return; }
 
@@ -189,14 +220,16 @@ namespace Helianthus
         //run monthly simulations
         GenDayMtxHelper genDayMtxHelper = new GenDayMtxHelper();
         List<List<double>> totalRadiationListByMonth = genDayMtxHelper.
-            runMonthlyGenDayMtxSimulations2(
-                pathname_MonthlyWeaFiles, simulation_monthRange);
+            runMonthlyGenDayMtxSimulations2(pathname_MonthlyWeaFiles,
+            simulation_monthRange, radianceFolder);
 
         //new section for joinedmesh
         //create gridded mesh from geometry
         List<Brep> geometryInputList = new List<Brep>{ geometryInput };
         Mesh joinedMesh = meshHelper.createGriddedMesh(geometryInputList, 1);
         Mesh finalMesh = meshHelper.createFinalMesh(joinedMesh);
+
+        finalMesh.Scale(visualizationParams.getGraphScale());
 
         double overallMaxRadiation = 0;
         double overallMinRadiation = 0;
@@ -211,15 +244,17 @@ namespace Helianthus
                     contextGeometryInput, radiationList,
                     materialDataObject.getMaterialTransparency());
 
-            double maxRadiation = finalRadiationList.Max();
-            double minRadiation = finalRadiationList.Min();
-            if (maxRadiation > overallMaxRadiation)
+            double maxDli = finalRadiationList.Max();
+            double minDli = finalRadiationList.Min();
+            List<int> dliGroups = simulationHelper.
+                    getDliGroupClassification(minDli, maxDli);
+            if (maxDli > overallMaxRadiation)
             {
-                overallMaxRadiation = maxRadiation;
+                overallMaxRadiation = maxDli;
             }
-            if(minRadiation < overallMinRadiation || overallMinRadiation == 0)
+            if(minDli < overallMinRadiation || overallMinRadiation == 0)
             {
-                overallMinRadiation = minRadiation;
+                overallMinRadiation = minDli;
             }
 
             //todo need to think more about how im assigning the
@@ -230,13 +265,16 @@ namespace Helianthus
             dataTreeRadiation.AddRange(radiationList, path);
 
             List<string> recCropList = populateDataTreeWithRecommendedCrops2(
-                cropDataInput, maxRadiation);
+                cropDataInput, dliGroups);
             monthlyCropsThatFitRangeString.AddRange(recCropList, path);
 
             TiledMeshObject tiledMeshObject = new TiledMeshObject();
             //todo maybe these should just be lists until the end and then
             //convert to datatree
             tiledMeshObject.setRadiationList(finalRadiationList);
+            tiledMeshObject.setDliGroupClassification(dliGroups);
+            tiledMeshObject.setMaxDli(maxDli);
+            tiledMeshObject.setMinDli(minDli);
             tiledMeshObject.setMonthlyCropsList(recCropList);
             tiledMeshObjects.Add(tiledMeshObject);
             monthCount++;
@@ -258,9 +296,12 @@ namespace Helianthus
                 monthCount, tempAppendedMeshTiled, visualizationParams);
 
             //create bar graph
-            double maxRadiation = tiledMeshObject.getRadiationList().Max();
+            List<int> dliRange = simulationHelper.getDliRangeFromDliGroups(
+                tiledMeshObject.getDliGroupClassification());
+            int minDli = dliRange[0];
+            int maxDli = dliRange[1];
             BarGraphObject barGraphObject = createBarGraphSection(
-                tempAppendedMeshTiled, cropDataInput, visualizationParams, maxRadiation,
+                tempAppendedMeshTiled, cropDataInput, maxDli, minDli,
                 overallMaxRadiation);
             tiledMeshObject.setBarGraphObject(barGraphObject);
 
@@ -273,10 +314,30 @@ namespace Helianthus
 
             //add bg plane
             Mesh meshBase2dPlane = meshHelper.create2dBaseMesh(
-                tempAppendedMeshTiled);
+                tempAppendedMeshTiled,
+                visualizationParams.getGraphBackgroundTransparency());
             tiledMeshObject.setBackgroundMesh(meshBase2dPlane);
             tempAppendedMeshTiled.Append(meshBase2dPlane);
 
+            //todo check
+            //tempAppendedMeshTiled.Scale(visualizationParams.getGraphScale());
+
+            //if(monthCount != 0)
+            //{
+            //    tempAppendedMeshTiled.Translate(
+            //        visualizationParams.getDiagramCenterpoint() -
+            //        tempAppendedMeshTiled.GetBoundingBox(true).Center);
+
+            //    tempAppendedMeshTiled.Translate(new Vector3d(previousBoundingBoxX.X - tempAppendedMeshTiled.GetBoundingBox(true).Min.X + 2, 0, 0));
+            //}
+            //else
+            //{
+            //    tempAppendedMeshTiled.Translate(
+            //        visualizationParams.getDiagramCenterpoint() -
+            //        tempAppendedMeshTiled.GetBoundingBox(true).Center);
+            //}
+                
+            
             //incrementing next section position
             previousBoundingBoxX = meshBase2dPlane.GetBoundingBox(true).Max;
 
@@ -321,7 +382,8 @@ namespace Helianthus
         Point3d cenPtMesh = monthlyFinalMesh.GetBoundingBox(true).Center;
         Vector3d translateVector = Point3d.Subtract(
             visualizationParams.getDiagramCenterpoint(), cenPtMesh);
-        monthlyFinalMesh.Translate(translateVector);
+        monthlyFinalMesh.Translate(new Vector3d(translateVector.X,
+            translateVector.Y, 0));
 
         incrementMeshPosition(monthlyFinalMesh, previousBoundingBox,
             monthCount);
@@ -346,9 +408,8 @@ namespace Helianthus
     }
 
     private BarGraphObject createBarGraphSection(
-        Mesh boundingMesh, List<CropDataObject> cropDataInput,
-        VisualizationDataObject visualizationParams, double maxRadiation,
-        double overallMaxRadiation)
+        Mesh boundingMesh, List<CropDataObject> cropDataInput, double maxDli,
+        double minDli, double overallMaxRadiation)
     {
         //create bar graph section
         BarGraphObject barGraphObject = new BarGraphObject();
@@ -366,8 +427,8 @@ namespace Helianthus
         //create bar graph mesh
         BarGraphHelper barGraphHelper = new BarGraphHelper();
         Mesh barGraphMesh = barGraphHelper.createBarGraph2(
-            boundingMesh, cropDataInput, maxRadiation, overallMaxRadiation,
-            null, Config.BarGraphType.DLI.ToString());
+            boundingMesh, cropDataInput, maxDli, minDli,
+            overallMaxRadiation, null, Config.BarGraphType.DLI.ToString());
         barGraphObject.setBarGraphMesh(barGraphMesh);
         boundingMesh.Append(barGraphMesh);
 
@@ -391,15 +452,17 @@ namespace Helianthus
         double percentageRadMin = minRadiation / overallMaxRadiation;
         double minXPos = percentageRadMin * legendWidth;
 
+        //todo
+        double markerWidth = legendWidth/overallMaxRadiation * .1;
         Mesh minMonthMarker = meshHelper.create2dMesh(legendHeight,
-            (overallMaxRadiation / legendWidth) * .1);
+            markerWidth);
         minMonthMarker.Translate(new Vector3d(
             legendMesh.GetBoundingBox(true).Min.X,
             legendMesh.GetBoundingBox(true).Min.Y, 0));
         minMonthMarker.Translate(new Vector3d(minXPos, 0, 0));
 
         Mesh maxMonthMarker = meshHelper.create2dMesh(legendHeight,
-            (overallMaxRadiation / legendWidth) * .1);
+            markerWidth);
         maxMonthMarker.Translate(new Vector3d(
             legendMesh.GetBoundingBox(true).Min.X,
             legendMesh.GetBoundingBox(true).Min.Y, 0));
@@ -418,9 +481,11 @@ namespace Helianthus
         if (minRadiation == maxRadiation)
         {
             Mesh legendDescriptorMonthlyMin = legendHelper.addLegendDescriptor(
-            Convert.ToString(Convert.ToInt32(minRadiation)) + " Min/Max/mth",
-            legendMesh.GetBoundingBox(true).Min.X,
-            legendMesh.GetBoundingBox(true).Max.Y + 1, .5, 3);
+                Convert.ToString(Convert.ToInt32(minRadiation)) + " Min/Max/mth",
+                legendMesh.GetBoundingBox(true).Min.X,
+                legendMesh.GetBoundingBox(true).Max.Y + 1,
+                .5,
+                legendMesh.GetBoundingBox(true).Max.X - legendMesh.GetBoundingBox(true).Min.X);
             legendDescriptorMonthlyMin.Translate(new Vector3d(
                 minXPos, 0, 0));
             legendMesh.Append(legendDescriptorMonthlyMin);
@@ -452,12 +517,18 @@ namespace Helianthus
     }
 
     private List<string> populateDataTreeWithRecommendedCrops2(
-        List<CropDataObject> cropDataList, double maxRadiation)
+        List<CropDataObject> cropDataList, List<int> dliGroups)
     {
+        List<int> dliRange = simulationHelper.getDliRangeFromDliGroups(
+            dliGroups);
+        int minDli = dliRange[0];
+        int maxDli = dliRange[1];
+
         List<string> cropList = new List<string>();
         foreach (CropDataObject crop in cropDataList)
         {
-            if (crop.getDli() < maxRadiation)
+            if (crop.getDli() <= maxDli && crop.getDli()
+                    >= minDli)
             {
                 cropList.Add(crop.getSpecie());
             }
