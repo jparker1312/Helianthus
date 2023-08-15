@@ -318,25 +318,6 @@ namespace Helianthus
                 visualizationParams.getGraphBackgroundTransparency());
             tiledMeshObject.setBackgroundMesh(meshBase2dPlane);
             tempAppendedMeshTiled.Append(meshBase2dPlane);
-
-            //todo check
-            //tempAppendedMeshTiled.Scale(visualizationParams.getGraphScale());
-
-            //if(monthCount != 0)
-            //{
-            //    tempAppendedMeshTiled.Translate(
-            //        visualizationParams.getDiagramCenterpoint() -
-            //        tempAppendedMeshTiled.GetBoundingBox(true).Center);
-
-            //    tempAppendedMeshTiled.Translate(new Vector3d(previousBoundingBoxX.X - tempAppendedMeshTiled.GetBoundingBox(true).Min.X + 2, 0, 0));
-            //}
-            //else
-            //{
-            //    tempAppendedMeshTiled.Translate(
-            //        visualizationParams.getDiagramCenterpoint() -
-            //        tempAppendedMeshTiled.GetBoundingBox(true).Center);
-            //}
-                
             
             //incrementing next section position
             previousBoundingBoxX = meshBase2dPlane.GetBoundingBox(true).Max;
