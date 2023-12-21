@@ -25,7 +25,7 @@ namespace Helianthus
             CropDataObject cropDataObject = new CropDataObject();
 			cropDataObject.crop_id = Convert.ToInt32(values[0]);
             cropDataObject.crop_type = values[1];
-			cropDataObject.specie = values[2];
+			cropDataObject.specie = values[2].Trim();
             cropDataObject.scientific_name = values[3];
             cropDataObject.dli = Convert.ToInt32(values[4]);
             cropDataObject.dli_group_classification = Convert.ToInt32(values[5]);
